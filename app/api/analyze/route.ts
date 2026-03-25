@@ -207,7 +207,9 @@ export async function POST(request: NextRequest) {
   const prompt = [
     "You are generating a simulated landing-page analysis for an MVP product.",
     "You are given only a URL and selected sections. Do not claim to have scraped, visited, or read the actual page.",
-    "Infer a plausible SaaS landing page review from the URL and common category patterns, but keep each point concrete and specific.",
+    "Base the analysis on common SaaS landing page patterns for the company's likely category.",
+    "Infer a plausible review from the URL and category patterns, but keep each point concrete and specific.",
+    "Do not assume exact page text unless it is clearly generic category language; when referencing copy, use likely wording or standard messaging patterns rather than invented verbatim claims.",
     "Follow these product guardrails:",
     "- Evidence over opinion",
     "- Clarity over completeness",
@@ -243,7 +245,7 @@ export async function POST(request: NextRequest) {
         {
           role: "system",
           content:
-            "Generate a concise, structured JSON landing-page analysis. Do not use tools. Do not mention that you are an AI model. Every section must contain specific observation, evidence, recommendation, and confidence reasoning."
+            "Generate a concise, structured JSON landing-page analysis. Do not use tools. Do not mention that you are an AI model. Base the analysis on common SaaS landing page patterns for the likely category. Do not imply that you saw exact page copy unless it is clearly generic. Every section must contain specific observation, evidence, recommendation, and confidence reasoning."
         },
         {
           role: "user",
