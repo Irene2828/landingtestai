@@ -30,7 +30,7 @@ export const mockResults: MockResults = {
       recommendation:
         "Keep the hero centered on one promise and make the rest support it. Example direction: headline \"Turn customer calls into searchable product insight\" with subcopy \"Auto-tag themes, objections, and quotes after every interview.\" Then move the broader business payoff into a short proof sentence near the CTA instead of asking the hero to explain everything at once.",
       confidence: {
-        level: "High",
+        level: "HIGH",
         reason:
           "This is a first-screen copy and hierarchy issue, so it is visible without needing behavioral or conversion data."
       }
@@ -48,7 +48,7 @@ export const mockResults: MockResults = {
       recommendation:
         "Rename the CTA to the actual next step. If the sales motion is demo-led, use something like \"Book a 15-minute walkthrough.\" If the product supports self-serve evaluation, use \"Upload a sample call.\" Add one short qualifier directly below it, such as \"See tagged themes from one recording in under 5 minutes\" or \"No credit card required,\" and visually demote the secondary action so the primary path is unmistakable.",
       confidence: {
-        level: "High",
+        level: "HIGH",
         reason:
           "The weakness is explicit in the button language and surrounding structure, and those are strong predictors of CTA clarity even before testing."
       }
@@ -66,7 +66,7 @@ export const mockResults: MockResults = {
       recommendation:
         "Replace one generic quote with a role-based, quantified proof block. Example direction: \"We cut interview synthesis from 6 hours to 45 minutes a week\" paired with a title such as Head of Product or VP of Research. Keep the logo strip tight, then place the quantified quote directly beneath it so the visitor reads credibility and outcome as one connected argument.",
       confidence: {
-        level: "High",
+        level: "HIGH",
         reason:
           "Trust quality in SaaS landing pages depends heavily on specificity, and the current mock proof is visibly too broad to carry the claim on its own."
       }

@@ -1,6 +1,38 @@
-export type ConfidenceLevel = "High" | "Medium" | "Low";
+export type ConfidenceLevel = "HIGH" | "MEDIUM" | "LOW";
 
 export type AnalysisSectionKey = "Hero" | "CTA" | "Social Proof";
+
+export type AnalyzeRequestPayload = {
+  url: string;
+  sections: AnalysisSectionKey[];
+  competitorUrls?: string[];
+};
+
+export type CompetitorSuggestion = {
+  id: string;
+  name: string;
+  initials: string;
+  url: string;
+};
+
+export type AnalyzeApiResponse = {
+  sections: Array<{
+    name: AnalysisSectionKey;
+    title: string;
+    observation: string;
+    evidence: string;
+    recommendation: string;
+    confidence: {
+      level: ConfidenceLevel;
+      reason: string;
+    };
+  }>;
+  summary: {
+    keyStrengths: string[];
+    keyGaps: string[];
+    topActions: string[];
+  };
+};
 
 export type SetupSectionOption = {
   key: AnalysisSectionKey;
@@ -27,9 +59,11 @@ export type SectionAnalysis = {
   };
 };
 
-export type MockResults = {
+export type ResultsData = {
   keyStrengths: string[];
   keyGaps: string[];
   topActions: string[];
   sections: SectionAnalysis[];
 };
+
+export type MockResults = ResultsData;

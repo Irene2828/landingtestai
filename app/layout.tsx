@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+
+import { AnalysisProvider } from "@/components/providers/AnalysisProvider";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,7 +24,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AnalysisProvider>{children}</AnalysisProvider>
+      </body>
     </html>
   );
 }

@@ -12,15 +12,24 @@ export function SectionSelector({
   onToggle
 }: SectionSelectorProps) {
   return (
-    <fieldset className="setup-block">
-      <legend className="setup-label">Sections to Analyze</legend>
+    <div
+      className="setup-block"
+      role="group"
+      aria-labelledby="sections-to-analyze-label"
+    >
+      <div id="sections-to-analyze-label" className="setup-label">
+        Sections to Analyze
+      </div>
 
       <div className="section-grid">
         {options.map((option) => {
           const checked = selected.includes(option.key);
 
           return (
-            <label key={option.key} className="section-option">
+            <label
+              key={option.key}
+              className={`section-option ${checked ? "section-option-selected" : ""}`.trim()}
+            >
               <input
                 type="checkbox"
                 checked={checked}
@@ -32,6 +41,10 @@ export function SectionSelector({
           );
         })}
       </div>
-    </fieldset>
+
+      <p className="setup-hint setup-hint-centered">
+        Choose the parts of the page you want the analysis to compare.
+      </p>
+    </div>
   );
 }

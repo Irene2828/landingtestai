@@ -1,7 +1,9 @@
+import Link from "next/link";
+
 export function AppHeader() {
   return (
     <header className="app-header">
-      <div className="app-brand">
+      <Link href="/" className="app-brand" aria-label="Go to homepage">
         <div className="app-brand-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48" fill="none">
             <path
@@ -10,10 +12,14 @@ export function AppHeader() {
             />
           </svg>
         </div>
-        <h1>SaaS Analyzer</h1>
-      </div>
+        <h1>SAAS Landing Page Analyzer</h1>
+      </Link>
 
-      <div className="app-avatar" aria-hidden="true" />
+      <div className="app-avatar" aria-hidden="true">
+        <span className="material-symbols-outlined app-avatar-icon">
+          account_circle
+        </span>
+      </div>
     </header>
   );
 }

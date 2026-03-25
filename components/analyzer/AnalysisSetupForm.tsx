@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
 import { suggestedCompetitors, setupSections } from "@/lib/mock-setup";
 import type { AnalysisSectionKey } from "@/lib/types";
 
@@ -14,6 +15,7 @@ const defaultSections: AnalysisSectionKey[] = ["Hero", "CTA", "Social Proof"];
 
 export function AnalysisSetupForm() {
   const router = useRouter();
+  const { clearAnalysis } = useAnalysisStore();
   const [url, setUrl] = useState("");
   const [selectedSections, setSelectedSections] =
     useState<AnalysisSectionKey[]>(defaultSections);
@@ -44,7 +46,20 @@ export function AnalysisSetupForm() {
       return;
     }
 
-    router.push("/loading");
+    const searchParams = new URLSearchParams({
+      url: url.trim()
+    });
+
+    selectedSections.forEach((section) => {
+      searchParams.append("section", section);
+    });
+
+    competitors.forEach((competitor) => {
+      searchParams.append("competitor", competitor.id);
+    });
+
+    clearAnalysis();
+    router.push(`/loading?${searchParams.toString()}`);
   }
 
   return (
@@ -60,15 +75,24 @@ export function AnalysisSetupForm() {
       <CompetitorTags competitors={competitors} onRemove={removeCompetitor} />
 
       <div className="setup-submit">
-        <button className="primary-button" type="submit" disabled={!canSubmit}>
-          <span
-            className="primary-button-icon material-symbols-outlined"
-            aria-hidden="true"
+        <div className="setup-submit-stack">
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={!canSubmit}
           >
-            analytics
-          </span>
-          Start Analysis
-        </button>
+            <span
+              className="primary-button-icon material-symbols-outlined"
+              aria-hidden="true"
+            >
+              analytics
+            </span>
+            Analyze page
+          </button>
+          <p className="setup-submit-meta">
+            Takes ~10 seconds · No signup required
+          </p>
+        </div>
       </div>
     </form>
   );

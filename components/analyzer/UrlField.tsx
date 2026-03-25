@@ -7,7 +7,7 @@ export function UrlField({ value, onChange }: UrlFieldProps) {
   return (
     <div className="setup-block">
       <label className="setup-label" htmlFor="url-input">
-        Target Landing Page URL
+        Paste your landing page URL
       </label>
 
       <div className="input-shell">
@@ -20,7 +20,7 @@ export function UrlField({ value, onChange }: UrlFieldProps) {
           type="url"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="https://example.com"
+          placeholder="https://yourlandingpage.com"
           required
         />
       </div>

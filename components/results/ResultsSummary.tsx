@@ -4,23 +4,50 @@ type ResultsSummaryProps = {
   actions: string[];
 };
 
+function splitSummaryItem(item: string) {
+  const words = item.trim().split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) {
+    return { lead: "", remainder: "" };
+  }
+
+  const leadWordCount = Math.min(words.length, 5);
+  const visibleWords = words.slice(0, 12);
+  const lead = visibleWords.slice(0, leadWordCount).join(" ");
+  const remainder = visibleWords.slice(leadWordCount).join(" ");
+
+  return {
+    lead,
+    remainder: remainder.trim()
+  };
+}
+
+function trimSummaryItem(item: string) {
+  const words = item.trim().split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) {
+    return "";
+  }
+
+  const visibleWords = words.slice(0, 12).join(" ");
+
+  return visibleWords;
+}
+
 const cards = [
   {
     key: "strengths",
-    title: "Key Strengths",
-    description: "Where the page already builds confidence and clarity.",
+    title: "What's Working",
     className: "summary-card-strengths"
   },
   {
     key: "gaps",
-    title: "Key Gaps",
-    description: "Where the current page loses clarity or persuasive force.",
+    title: "Where It Breaks",
     className: "summary-card-gaps"
   },
   {
     key: "actions",
-    title: "Top Actions",
-    description: "The highest-leverage improvements to prioritize next.",
+    title: "What To Do Next",
     className: "summary-card-actions"
   }
 ] as const;
@@ -44,11 +71,21 @@ export function ResultsSummary({
           className={`summary-card ${card.className}`.trim()}
         >
           <h2>{card.title}</h2>
-          <p>{card.description}</p>
           <ul>
-            {itemsByKey[card.key].map((item) => (
-              <li key={item}>{item}</li>
-            ))}
+            {itemsByKey[card.key].map((item) => {
+              if (card.key !== "actions") {
+                return <li key={item}>{trimSummaryItem(item)}</li>;
+              }
+
+              const { lead, remainder } = splitSummaryItem(item);
+
+              return (
+                <li key={item}>
+                  <strong className="summary-item-lead">{lead}</strong>
+                  {remainder ? ` ${remainder}` : ""}
+                </li>
+              );
+            })}
           </ul>
         </article>
       ))}

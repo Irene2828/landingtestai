@@ -1,9 +1,20 @@
-import { AnalysisLoadingCard } from "@/components/loading/AnalysisLoadingCard";
+import { Suspense } from "react";
+
+import {
+  AnalysisLoadingCard,
+  AnalysisLoadingFallback
+} from "@/components/loading/AnalysisLoadingCard";
+import { AppHeader } from "@/components/shared/AppHeader";
 
 export default function LoadingPage() {
   return (
-    <main className="loading-shell">
-      <AnalysisLoadingCard />
-    </main>
+    <div className="setup-shell">
+      <AppHeader />
+      <main className="loading-shell">
+        <Suspense fallback={<AnalysisLoadingFallback />}>
+          <AnalysisLoadingCard />
+        </Suspense>
+      </main>
+    </div>
   );
 }

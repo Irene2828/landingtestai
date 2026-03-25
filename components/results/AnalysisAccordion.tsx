@@ -22,7 +22,7 @@ export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
               <p>{section.summary}</p>
             </div>
             <span className="accordion-marker" aria-hidden="true">
-              +
+              →
             </span>
           </summary>
 
@@ -47,7 +47,7 @@ export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
 
               <div className="confidence-box">
                 <span className="confidence-badge">
-                  Confidence: {section.confidence.level}
+                  {section.confidence.level} confidence
                 </span>
                 <p className="confidence-note">{section.confidence.reason}</p>
               </div>
