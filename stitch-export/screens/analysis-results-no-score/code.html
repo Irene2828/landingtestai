@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SaaS Landing Page Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline": "#737c7f",
+                        "tertiary-container": "#d3ceef",
+                        "background": "#f8f9fa",
+                        "surface-dim": "#d1dce0",
+                        "inverse-surface": "#0c0f10",
+                        "on-error": "#fff7f6",
+                        "tertiary-fixed-dim": "#c5c0e0",
+                        "on-tertiary-fixed-variant": "#504e69",
+                        "secondary-fixed": "#e2e2e9",
+                        "on-tertiary-fixed": "#34314b",
+                        "secondary-fixed-dim": "#d4d4db",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#47445f",
+                        "surface-container": "#eaeff1",
+                        "on-primary-container": "#0048bf",
+                        "secondary-dim": "#515359",
+                        "surface-tint": "#0053db",
+                        "on-tertiary": "#fcf7ff",
+                        "error-dim": "#4e0309",
+                        "on-secondary": "#f9f8ff",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-fixed": "#d3ceef",
+                        "primary-fixed-dim": "#c7d3ff",
+                        "surface-container-highest": "#dbe4e7",
+                        "outline-variant": "#abb3b7",
+                        "error-container": "#fe8983",
+                        "inverse-on-surface": "#9b9d9e",
+                        "on-background": "#2b3437",
+                        "primary-dim": "#0048c1",
+                        "on-primary-fixed": "#003798",
+                        "surface": "#f8f9fa",
+                        "primary-container": "#dbe1ff",
+                        "error": "#9f403d",
+                        "primary": "#0053db",
+                        "secondary": "#5e5f65",
+                        "tertiary-dim": "#53506b",
+                        "tertiary": "#5f5c78",
+                        "surface-variant": "#dbe4e7",
+                        "on-surface": "#2b3437",
+                        "surface-container-high": "#e2e9ec",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary": "#f8f7ff",
+                        "on-secondary-container": "#505157",
+                        "secondary-container": "#e2e2e9",
+                        "on-secondary-fixed-variant": "#5a5b61",
+                        "on-surface-variant": "#586064",
+                        "on-primary-fixed-variant": "#0050d4",
+                        "surface-container-low": "#f1f4f6",
+                        "on-secondary-fixed": "#3e3f45",
+                        "on-error-container": "#752121",
+                        "inverse-primary": "#618bff"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen font-body antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-40 flex flex-1 justify-center py-8">
+<div class="layout-content-container flex flex-col max-w-[1024px] flex-1">
+<!-- Header Area -->
+<div class="flex flex-wrap justify-between items-start gap-4 p-8 bg-surface-container-lowest rounded-xl shadow-sm mb-8">
+<div class="flex flex-col gap-3 max-w-2xl">
+<h1 class="text-on-surface text-4xl font-extrabold leading-tight tracking-[-0.033em] font-headline">Landing Page Analysis Results</h1>
+<p class="text-on-surface-variant text-lg font-normal leading-relaxed">Insights and evidence-based recommendations for acme-saas.com.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center rounded-md h-10 px-4 bg-surface-container-high text-on-surface text-sm font-medium transition-colors hover:bg-surface-container-highest">
+                                Share Report
+                            </button>
+<button class="flex items-center justify-center rounded-md h-10 px-4 bg-primary text-on-primary text-sm font-medium shadow-sm transition-colors hover:bg-primary-dim bg-gradient-to-br from-primary to-primary-dim">
+                                Export PDF
+                            </button>
+</div>
+</div>
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 gap-6 mb-12 md:grid-cols-3">
+<div class="flex flex-col gap-3 rounded-xl p-6 bg-surface-container-lowest shadow-sm border-l-4 border-l-primary">
+<p class="text-on-surface-variant text-sm font-medium tracking-wide uppercase">Key Strengths</p>
+<ul class="text-on-surface-variant text-sm space-y-1 list-disc list-inside">
+<li>Clear social proof</li>
+<li>High-contrast CTAs</li>
+</ul>
+</div>
+<div class="flex flex-col gap-3 rounded-xl p-6 bg-surface-container-lowest shadow-sm border-l-4 border-l-error">
+<p class="text-on-surface-variant text-sm font-medium tracking-wide uppercase">Key Gaps</p>
+<ul class="text-on-surface-variant text-sm space-y-1 list-disc list-inside">
+<li>Hero value prop clarity</li>
+<li>Mobile load speeds</li>
+</ul>
+</div>
+<div class="flex flex-col gap-3 rounded-xl p-6 bg-surface-container-lowest shadow-sm border-l-4 border-l-inverse-primary">
+<p class="text-on-surface-variant text-sm font-medium tracking-wide uppercase">Top Actions</p>
+<ul class="text-on-surface-variant text-sm space-y-1 list-disc list-inside">
+<li>Revise H1 headline</li>
+<li>Add above-fold logos</li>
+<li>Optimize image assets</li>
+</ul>
+</div>
+</div>
+<h2 class="text-on-surface text-2xl font-bold leading-tight tracking-[-0.02em] font-headline mb-6">Section-based Analysis</h2>
+<div class="flex flex-col gap-6 mb-12">
+<!-- Hero Section -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden" open="">
+<summary class="flex cursor-pointer items-center justify-between gap-6 p-6 bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<span class="flex items-center justify-center w-8 h-8 rounded-full bg-error-container text-on-error-container font-bold text-sm">1</span>
+<h3 class="text-on-surface text-lg font-semibold">Hero Section</h3>
+<span class="px-3 py-1 rounded-full bg-error-container/20 text-error text-xs font-semibold tracking-wide uppercase">Needs Improvement</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform duration-200">expand_more</span>
+</summary>
+<div class="p-6 border-t border-surface-variant/50">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 md:grid-cols-3">
+<div class="col-span-1">
+<div class="rounded-lg overflow-hidden border border-outline-variant/20 shadow-sm aspect-video bg-surface-container flex items-center justify-center relative">
+<img alt="Abstract digital representation of a website hero section with charts and data" class="w-full h-full object-cover" data-alt="Screenshot of a generic SaaS hero section showing a headline 'Unlock Potential' and a laptop image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPjMtZKLHzz0_jB--nJjy0WMQpzP4xL2XNjJOuiPUGakc5R10qY8hDiRAv-6G8Q5K_rvsmaI8bMwDEIicPaZW4WW-6msn30IEnSuyMaMkByg7qTMLdcu1rCmejcv5TTkUXp5Ihk-XMb8ldOAcyQa5sBbXGNknnbOb92qieDw39boWpaOnsHOdxMP4CPft4XFfy2Bs-GcyED19i6T9Zl2jd13hr6CdQyIc_lB-Vv927bbc_UwUQDUvGTr5v7TdSZ9uze2DL6K_-Jmg"/>
+<div class="absolute inset-0 border-4 border-error/50 rounded-lg pointer-events-none"></div>
+</div>
+</div>
+<div class="col-span-2 flex flex-col gap-6">
+<div>
+<h4 class="text-on-surface font-semibold mb-2">Observation</h4>
+<p class="text-on-surface-variant text-base leading-relaxed">The primary headline "Unlock your team's true potential" is generic and fails to immediately communicate the core value proposition or specific problem solved.</p>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-lg border-2 border-primary-container shadow-sm">
+<h4 class="text-primary font-bold text-xs uppercase tracking-widest mb-2">Evidence (from page)</h4>
+<p class="text-on-surface-variant text-sm font-mono leading-relaxed bg-surface-container-low p-3 rounded">H1: "Unlock your team's true potential"<br/>Subtext: "The all-in-one platform for modern businesses."</p>
+</div>
+<div>
+<h4 class="text-on-surface font-semibold mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">lightbulb</span> Recommendation
+                                            </h4>
+<p class="text-on-surface-variant text-base leading-relaxed">Revise the H1 to focus on specific outcomes (e.g., "Automate client reporting in 5 minutes"). Ensure the subheadline clarifies the target audience and mechanism.</p>
+</div>
+<div class="mt-2 flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Confidence:</span>
+<span class="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-xs font-semibold">High</span>
+</div>
+<p class="text-on-surface-variant text-xs italic">Based on clear headline ambiguity + repeated patterns across top-performing competitors.</p>
+</div>
+</div>
+</div>
+</div>
+</details>
+<!-- CTA Section -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden">
+<summary class="flex cursor-pointer items-center justify-between gap-6 p-6 bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<span class="flex items-center justify-center w-8 h-8 rounded-full bg-primary-container text-on-primary-container font-bold text-sm">2</span>
+<h3 class="text-on-surface text-lg font-semibold">Primary CTA</h3>
+<span class="px-3 py-1 rounded-full bg-primary-container/30 text-primary text-xs font-semibold tracking-wide uppercase">Good</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform duration-200">expand_more</span>
+</summary>
+<div class="p-6 border-t border-surface-variant/50">
+<div class="col-span-2 flex flex-col gap-6">
+<div>
+<h4 class="text-on-surface font-semibold mb-2">Observation</h4>
+<p class="text-on-surface-variant text-base leading-relaxed">The "Get Started" button has high visual contrast and is placed logically at the end of feature sections.</p>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-lg border-2 border-primary-container shadow-sm">
+<h4 class="text-primary font-bold text-xs uppercase tracking-widest mb-2">Evidence (from page)</h4>
+<p class="text-on-surface-variant text-sm font-mono leading-relaxed bg-surface-container-low p-3 rounded">Button Class: "bg-primary text-on-primary font-bold"<br/>Contrast Ratio: 7.2:1 (Passes AAA)</p>
+</div>
+<div class="mt-2 flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Confidence:</span>
+<span class="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-xs font-semibold">High</span>
+</div>
+<p class="text-on-surface-variant text-xs italic">Based on objective WCAG color analysis and standard heat-map positioning.</p>
+</div>
+</div>
+</div>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Analyzing Landing Page - InsightAI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#abb3b7",
+                        "primary-fixed-dim": "#c7d3ff",
+                        "on-error": "#fff7f6",
+                        "secondary-container": "#e2e2e9",
+                        "surface-container-low": "#f1f4f6",
+                        "on-tertiary": "#fcf7ff",
+                        "tertiary-fixed": "#d3ceef",
+                        "on-secondary-fixed-variant": "#5a5b61",
+                        "primary-dim": "#0048c1",
+                        "tertiary": "#5f5c78",
+                        "on-primary-fixed": "#003798",
+                        "surface-variant": "#dbe4e7",
+                        "on-secondary": "#f9f8ff",
+                        "on-error-container": "#752121",
+                        "on-tertiary-container": "#47445f",
+                        "on-tertiary-fixed": "#34314b",
+                        "secondary-dim": "#515359",
+                        "surface-bright": "#f8f9fa",
+                        "error-dim": "#4e0309",
+                        "on-tertiary-fixed-variant": "#504e69",
+                        "primary-fixed": "#dbe1ff",
+                        "on-background": "#2b3437",
+                        "primary-container": "#dbe1ff",
+                        "on-primary-container": "#0048bf",
+                        "inverse-surface": "#0c0f10",
+                        "surface-dim": "#d1dce0",
+                        "on-surface": "#2b3437",
+                        "on-primary": "#f8f7ff",
+                        "on-primary-fixed-variant": "#0050d4",
+                        "error": "#9f403d",
+                        "secondary-fixed-dim": "#d4d4db",
+                        "tertiary-container": "#d3ceef",
+                        "error-container": "#fe8983",
+                        "secondary-fixed": "#e2e2e9",
+                        "secondary": "#5e5f65",
+                        "inverse-on-surface": "#9b9d9e",
+                        "surface-tint": "#0053db",
+                        "surface": "#f8f9fa",
+                        "on-secondary-container": "#505157",
+                        "background": "#f8f9fa",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#0053db",
+                        "surface-container-highest": "#dbe4e7",
+                        "surface-container-high": "#e2e9ec",
+                        "surface-container": "#eaeff1",
+                        "outline": "#737c7f",
+                        "tertiary-fixed-dim": "#c5c0e0",
+                        "tertiary-dim": "#53506b",
+                        "on-surface-variant": "#586064",
+                        "inverse-primary": "#618bff",
+                        "on-secondary-fixed": "#3e3f45"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body min-h-screen flex flex-col items-center justify-center p-6 sm:p-12">
+<div class="w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-[0_32px_64px_-12px_rgba(43,52,55,0.04)] border border-outline-variant/20 overflow-hidden">
+<!-- Header Section -->
+<div class="p-8 sm:p-12 pb-8 flex flex-col items-center text-center">
+<div class="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center mb-6 border border-outline-variant/20 shadow-[0_8px_16px_-4px_rgba(43,52,55,0.04)]">
+<span class="material-symbols-outlined text-primary text-3xl animate-pulse-fast" data-icon="search_insights" style="font-variation-settings: 'FILL' 1;">search_insights</span>
+</div>
+<h1 class="font-headline text-3xl font-bold tracking-tight text-on-surface mb-3">Analyzing your landing page</h1>
+<p class="text-on-surface-variant text-lg max-w-md mx-auto leading-relaxed">Please wait while our AI engine gathers evidence-based insights and benchmarks your performance.</p>
+</div>
+<!-- Progress Section -->
+<div class="px-8 sm:px-12 pb-12">
+<!-- Overall Progress Bar -->
+<div class="mb-10">
+<div class="flex justify-between items-end mb-3">
+<span class="text-sm font-semibold text-on-surface tracking-wide uppercase">Analysis Progress</span>
+<span class="text-2xl font-bold text-primary tabular-nums">65%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-dim rounded-full transition-all duration-500 ease-in-out relative" style="width: 65%;">
+<div class="absolute inset-0 bg-white/20 animate-[pulse-fast_2s_infinite]"></div>
+</div>
+</div>
+</div>
+<!-- Steps -->
+<div class="space-y-6">
+<!-- Step 1: Completed -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low/50 transition-colors">
+<div class="flex-shrink-0 mt-0.5">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-on-secondary-container" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<div class="flex-1">
+<h3 class="text-base font-semibold text-on-surface line-through decoration-on-surface-variant/50">Parsing HTML &amp; Structure</h3>
+<p class="text-sm text-on-surface-variant mt-1">Successfully extracted core elements and semantic tags.</p>
+</div>
+</div>
+<!-- Step 2: Processing -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-lowest border border-outline-variant/20 shadow-[0_8px_16px_-4px_rgba(43,52,55,0.04)] relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex-shrink-0 mt-0.5">
+<div class="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+</div>
+<div class="flex-1">
+<h3 class="text-base font-bold text-on-surface">Analyzing Competitors &amp; Benchmarking</h3>
+<p class="text-sm text-on-surface-variant mt-1">Comparing copy, value propositions, and CTA placement against top performers in your niche.</p>
+</div>
+</div>
+<!-- Step 3: Pending -->
+<div class="flex items-start gap-4 p-4 rounded-lg opacity-60">
+<div class="flex-shrink-0 mt-0.5">
+<div class="w-6 h-6 rounded-full border border-outline-variant/40 flex items-center justify-center bg-surface-container-low">
+<span class="w-2 h-2 rounded-full bg-outline-variant/40"></span>
+</div>
+</div>
+<div class="flex-1">
+<h3 class="text-base font-medium text-on-surface">Generating Evidence-Based Insights</h3>
+<p class="text-sm text-on-surface-variant mt-1">Pending completion of benchmark analysis.</p>
+</div>
+</div>
+</div>
+<div class="mt-10 flex justify-center">
+<button class="px-6 py-2.5 rounded-md text-primary font-medium text-sm hover:bg-primary/5 transition-colors duration-200">
+                    Cancel Analysis
+                </button>
+</div>
+</div>
+</div>
+</body></html>
