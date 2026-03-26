@@ -1,26 +1,10 @@
+import { renderEmphasizedText } from "./text-emphasis";
+
 type ResultsSummaryProps = {
   strengths: string[];
   gaps: string[];
   actions: string[];
 };
-
-function splitSummaryItem(item: string) {
-  const words = item.trim().split(/\s+/).filter(Boolean);
-
-  if (words.length === 0) {
-    return { lead: "", remainder: "" };
-  }
-
-  const leadWordCount = Math.min(words.length, 5);
-  const visibleWords = words.slice(0, 12);
-  const lead = visibleWords.slice(0, leadWordCount).join(" ");
-  const remainder = visibleWords.slice(leadWordCount).join(" ");
-
-  return {
-    lead,
-    remainder: remainder.trim()
-  };
-}
 
 function trimSummaryItem(item: string) {
   const words = item.trim().split(/\s+/).filter(Boolean);
@@ -77,12 +61,9 @@ export function ResultsSummary({
                 return <li key={item}>{trimSummaryItem(item)}</li>;
               }
 
-              const { lead, remainder } = splitSummaryItem(item);
-
               return (
                 <li key={item}>
-                  <strong className="summary-item-lead">{lead}</strong>
-                  {remainder ? ` ${remainder}` : ""}
+                  {renderEmphasizedText(trimSummaryItem(item), { maxPerLine: 2 })}
                 </li>
               );
             })}

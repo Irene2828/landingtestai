@@ -40,13 +40,14 @@ export function CompetitorTags({
           type="button"
           aria-disabled="true"
           title="Coming soon"
+          data-tooltip="Coming soon"
         >
           + Add competitor
         </button>
       </div>
 
       <p className="setup-hint setup-hint-centered">
-        Auto-suggested based on category. You can edit these.
+        Suggested from your site category. You can edit these.
       </p>
     </div>
   );

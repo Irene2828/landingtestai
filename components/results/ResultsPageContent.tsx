@@ -50,7 +50,7 @@ export function ResultsPageContent() {
           <h1>The Result</h1>
           <p className="page-intro">
             Structured insights based on page content and competitor
-            comparisons.
+            comparisons. Visual analysis is coming next.
           </p>
         </header>
 

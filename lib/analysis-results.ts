@@ -27,13 +27,19 @@ function extractSectionSummary(observation: string) {
   }
 
   const normalizedFirstLine = firstLine.replace(/^[-*•]\s*/, "").trim();
-  const firstSentenceMatch = normalizedFirstLine.match(/^.*?[.!?](?:\s|$)/);
+  const sentences = normalizedFirstLine.match(/[^.!?]+[.!?]?/g)?.map((sentence) =>
+    sentence.trim()
+  );
 
-  if (!firstSentenceMatch) {
+  if (!sentences || sentences.length === 0) {
     return normalizedFirstLine;
   }
 
-  return firstSentenceMatch[0].trim();
+  if (sentences.length > 1) {
+    return sentences[1];
+  }
+
+  return sentences[0];
 }
 
 export function mapAnalysisResponseToResults(

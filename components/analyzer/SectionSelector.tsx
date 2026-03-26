@@ -18,7 +18,7 @@ export function SectionSelector({
       aria-labelledby="sections-to-analyze-label"
     >
       <div id="sections-to-analyze-label" className="setup-label">
-        Sections to Analyze
+        Sections to analyze
       </div>
 
       <div className="section-grid">

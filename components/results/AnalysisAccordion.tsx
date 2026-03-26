@@ -1,6 +1,7 @@
 import type { SectionAnalysis } from "@/lib/types";
 
 import { ScreenshotPlaceholder } from "./ScreenshotPlaceholder";
+import { renderEmphasizedText } from "./text-emphasis";
 
 type AnalysisAccordionProps = {
   sections: SectionAnalysis[];
@@ -19,7 +20,6 @@ export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
             <div className="analysis-card-summary-copy">
               <span className="section-key-badge">{section.key}</span>
               <h3>{section.title}</h3>
-              <p>{section.summary}</p>
             </div>
             <span className="accordion-marker" aria-hidden="true">
               →
@@ -32,7 +32,7 @@ export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
             <div className="analysis-content">
               <div className="content-block">
                 <span className="content-label">Observation</span>
-                <p>{section.observation}</p>
+                <p>{renderEmphasizedText(section.observation, { maxPerLine: 1 })}</p>
               </div>
 
               <div className="content-block content-block-evidence">
@@ -42,7 +42,7 @@ export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
 
               <div className="content-block">
                 <span className="content-label">Recommendation</span>
-                <p>{section.recommendation}</p>
+                <p>{renderEmphasizedText(section.recommendation, { maxPerLine: 2 })}</p>
               </div>
 
               <div className="confidence-box">

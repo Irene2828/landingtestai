@@ -9,7 +9,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
-import { loadingSteps, suggestedCompetitors } from "@/lib/mock-setup";
+import { competitorCatalog, loadingSteps } from "@/lib/mock-setup";
 import type {
   AnalysisSectionKey,
   AnalyzeApiResponse,
@@ -33,7 +33,7 @@ let pendingAnalyzeRequest:
   | null = null;
 
 const competitorUrlById = new Map(
-  suggestedCompetitors.map((competitor) => [competitor.id, competitor.url])
+  competitorCatalog.map((competitor) => [competitor.id, competitor.url])
 );
 
 function getRequestFromSearchParams(

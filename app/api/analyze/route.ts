@@ -339,8 +339,44 @@ function stripLeadingNumberArtifact(value: string) {
     .trim();
 }
 
+function collapseRepeatedPhraseRuns(value: string) {
+  const normalized = normalizeWhitespace(value);
+  const words = normalized.split(/\s+/).filter(Boolean);
+
+  if (words.length < 6) {
+    return normalized;
+  }
+
+  for (
+    let segmentLength = 3;
+    segmentLength <= Math.floor(words.length / 2);
+    segmentLength += 1
+  ) {
+    if (words.length % segmentLength !== 0) {
+      continue;
+    }
+
+    const firstSegment = words.slice(0, segmentLength).join(" ");
+    const repeats = words.length / segmentLength;
+
+    if (repeats < 2) {
+      continue;
+    }
+
+    const isRepeatedSegment = Array.from({ length: repeats }, (_, index) =>
+      words.slice(index * segmentLength, (index + 1) * segmentLength).join(" ")
+    ).every((segment) => segment === firstSegment);
+
+    if (isRepeatedSegment) {
+      return firstSegment;
+    }
+  }
+
+  return normalized;
+}
+
 function normalizeExtractedText(value: string) {
-  return normalizeWhitespace(
+  return collapseRepeatedPhraseRuns(
     decodeHtmlEntities(value.replace(/<[^>]+>/g, " ")).replace(/\u00a0/g, " ")
   );
 }
@@ -630,6 +666,34 @@ function normalizeCtaText(value: string) {
     .trim();
 }
 
+function isLikelyNavigationText(value: string) {
+  return /\b(?:pricing|product|products|platform|solutions?|resources?|resource center|docs?|documentation|blog|careers|about|company|customers?|case studies|security|partners?|support|contact us|sign in|log in|login|home)\b/i.test(
+    value
+  );
+}
+
+function isLikelyPromoBannerText(value: string) {
+  return (
+    /\b(?:introducing|launch week|announcement|release|report|webinar|event|summit|read more|learn more|discover|explore)\b/i.test(
+      value
+    ) ||
+    /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(
+      value
+    ) ||
+    /\b20\d{2}\b/.test(value)
+  );
+}
+
+function hasRepeatedSystemText(value: string) {
+  const words = value.toLowerCase().split(/\s+/).filter(Boolean);
+
+  if (words.length < 6) {
+    return false;
+  }
+
+  return new Set(words).size <= Math.ceil(words.length / 2.5);
+}
+
 function extractCtaSnippets(html: string) {
   const plainText = sanitizeExtractedText(html);
   const snippets: string[] = [];
@@ -734,8 +798,20 @@ function scoreCtaCandidate(
     score -= 2;
   }
 
-  if (/\b(product|resources|pricing|docs|blog|careers|about|privacy)\b/.test(lower)) {
-    score -= 2;
+  if (isLikelyNavigationText(value)) {
+    score -= 5;
+  }
+
+  if (isLikelyPromoBannerText(value)) {
+    score -= 6;
+  }
+
+  if (hasRepeatedSystemText(value)) {
+    score -= 4;
+  }
+
+  if (source === "text" && wordCount > 7) {
+    score -= 5;
   }
 
   return score;
@@ -823,6 +899,12 @@ function extractTrustSignalSnippets(html: string) {
   return snippets;
 }
 
+function isLikelyTrustNavigationNoise(value: string) {
+  return /\b(?:products?|platform|solutions?|resources?|docs?|developers?|api|pricing|company|research|blog|careers|learn|build and learn|introducing|features?|integrations?|claude code)\b/i.test(
+    value
+  );
+}
+
 function extractTrustSignalsFromHtml(
   html: string,
   seedValues: string[]
@@ -844,7 +926,10 @@ function extractTrustSignalsFromHtml(
       index,
       score: matchesTrustSignal(value) ? scoreTrustSignal(value) : 0
     }))
-    .filter((candidate) => candidate.score >= 2)
+    .filter(
+      (candidate) =>
+        candidate.score >= 3 && !isLikelyTrustNavigationNoise(candidate.value)
+    )
     .sort((left, right) => {
       if (right.score !== left.score) {
         return right.score - left.score;
@@ -877,6 +962,29 @@ function extractMetaDescription(html: string) {
   return "";
 }
 
+function isBrokenHeroHeadline(value: string, description: string) {
+  if (!value || !description) {
+    return false;
+  }
+
+  const words = value.toLowerCase().split(/\s+/).filter(Boolean);
+
+  if (words.length < 6) {
+    return false;
+  }
+
+  const rotatingActionWords = words.filter((word) =>
+    new Set(["grow", "scale", "close", "retain", "convert", "engage"]).has(
+      word
+    )
+  );
+
+  const hasRepeatedWord = new Set(words).size < words.length;
+  const looksLikeWordSoup = rotatingActionWords.length >= 3 && hasRepeatedWord;
+
+  return looksLikeWordSoup;
+}
+
 function extractPageContentFromHtml(
   html: string,
   sections: ValidSection[]
@@ -892,12 +1000,15 @@ function extractPageContentFromHtml(
     needsHeroContent || needsTrustContent ? extractTagText(html, "h2") : [];
   const ctas = needsCtaContent ? extractCallToActionsFromHtml(html) : [];
   const description = extractMetaDescription(html);
-  const headline = h1Text[0] ? normalizeExtractedText(h1Text[0]) : "";
+  const rawHeadline = h1Text[0] ? normalizeExtractedText(h1Text[0]) : "";
+  const useDescriptionAsHeadline = isBrokenHeroHeadline(rawHeadline, description);
+  const headline = useDescriptionAsHeadline ? description : rawHeadline;
+  const heroHeadings = useDescriptionAsHeadline ? h2Text : [...h1Text, ...h2Text];
 
   return {
     title,
     headline,
-    headings: dedupeNonEmpty([...h1Text, ...h2Text]),
+    headings: dedupeNonEmpty(heroHeadings),
     ctas,
     description,
     trustSignals: needsTrustContent
@@ -905,8 +1016,7 @@ function extractPageContentFromHtml(
           title,
           headline,
           description,
-          ...h1Text,
-          ...h2Text
+          ...heroHeadings
         ])
       : []
   };
@@ -994,7 +1104,11 @@ function buildSectionRules(selectedSections: ValidSection[]) {
 
   if (selectedSections.includes("Hero")) {
     rules.push(
-      "- Hero: compare what the page says, what changes for the user, and whether the first screen shows one clear next step using the title, meta description, and H1/H2 text."
+      "- Hero: before forming any critique, review all available hero content together, including the title, H1 headline, H2 or supporting lines, headings, and meta description.",
+      "- Hero: treat the meta description as supporting hero text when it clarifies the product, category, or user outcome.",
+      "- Hero: do not ignore supporting lines if they clarify what the product does, the category, or the user outcome.",
+      "- Hero: use ALL available hero-related text to determine what the page communicates, not just the H1.",
+      "- Hero: compare what the page says, what changes for the user, and whether the first screen shows one clear next step using the full hero context, not just the main headline."
     );
   }
 
@@ -1019,6 +1133,9 @@ function trimForLog(value: string, maxLength = 4000) {
     : value;
 }
 
+const COMPARISON_VERB_PATTERN =
+  /\b(?:is|are|was|were|has|have|shows?|uses?|offers?|creates?|keeps?|gives?|feels?|reads?|stays?|remains?|adds?|leans?|positions?|leads?|explains?|communicates?|frames?|pairs?|ties?|surfaces?|makes?)\b/i;
+
 function sanitizeSentenceLikeText(value: string) {
   return stripLeadingNumberArtifact(
     normalizeWhitespace(value)
@@ -1030,7 +1147,34 @@ function sanitizeSentenceLikeText(value: string) {
       /\s+(?:and|or|because|with|to|for|across|than|which|while|that)\s*$/i,
       ""
     )
+    .replace(/,\s*$/g, "")
     .trim();
+}
+
+function isIncompleteComparisonSentence(value: string) {
+  if (!/^Compared (?:to|with)\b/i.test(value)) {
+    return false;
+  }
+
+  return !COMPARISON_VERB_PATTERN.test(value);
+}
+
+function isIncompleteInsightSentence(value: string) {
+  const sanitized = sanitizeSentenceLikeText(value);
+
+  if (!sanitized) {
+    return true;
+  }
+
+  if (/^(?:["“][^"”]+["”]|['‘][^'’]+['’])[,;:]?$/i.test(sanitized)) {
+    return true;
+  }
+
+  if (isIncompleteComparisonSentence(sanitized)) {
+    return true;
+  }
+
+  return false;
 }
 
 function sanitizeBulletBlock(value: string) {
@@ -1040,7 +1184,9 @@ function sanitizeBulletBlock(value: string) {
     .filter(Boolean);
 
   const sanitizedLines = dedupeNonEmpty(
-    rawLines.map((line) => sanitizeSentenceLikeText(line)),
+    rawLines
+      .map((line) => sanitizeSentenceLikeText(line))
+      .filter((line) => !isIncompleteInsightSentence(line)),
     2
   );
 
@@ -1059,6 +1205,81 @@ function sanitizeSummaryItem(value: string) {
     .trim();
 }
 
+function splitIntoSentences(value: string) {
+  return value
+    .match(/[^.!?]+[.!?]?/g)
+    ?.map((sentence) => sanitizeSentenceLikeText(sentence))
+    .filter(Boolean) ?? [];
+}
+
+function normalizeSentenceForComparison(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/["“”'’]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(
+      (word) =>
+        word.length > 3 &&
+        !new Set([
+          "this",
+          "that",
+          "with",
+          "from",
+          "into",
+          "their",
+          "there",
+          "about",
+          "because",
+          "compared",
+          "page"
+        ]).has(word)
+    );
+}
+
+function isRepeatedObservationSentence(first: string, second: string) {
+  const firstWords = normalizeSentenceForComparison(first);
+  const secondWords = normalizeSentenceForComparison(second);
+
+  if (firstWords.length === 0 || secondWords.length === 0) {
+    return false;
+  }
+
+  const firstSet = new Set(firstWords);
+  const overlap = secondWords.filter((word) => firstSet.has(word));
+  const overlapRatio = overlap.length / Math.max(secondWords.length, 1);
+
+  return overlapRatio >= 0.5;
+}
+
+function sanitizeObservation(value: string) {
+  const sentences = splitIntoSentences(value).filter(
+    (sentence) => !isIncompleteInsightSentence(sentence)
+  );
+
+  if (sentences.length === 0) {
+    return MISSING_INFORMATION_TEXT;
+  }
+
+  const keptSentences: string[] = [sentences[0]];
+
+  for (const sentence of sentences.slice(1)) {
+    if (keptSentences.length >= 2) {
+      break;
+    }
+
+    if (isRepeatedObservationSentence(keptSentences[0], sentence)) {
+      continue;
+    }
+
+    keptSentences.push(sentence);
+  }
+
+  return keptSentences
+    .map((sentence) => (/[.!?]$/.test(sentence) ? sentence : `${sentence}.`))
+    .join(" ");
+}
+
 function sanitizeAnalyzeResponse(
   response: AnalyzeApiResponse
 ): AnalyzeApiResponse {
@@ -1073,7 +1294,7 @@ function sanitizeAnalyzeResponse(
         .filter(Boolean)
     },
     sections: response.sections.map((section) => {
-      const observation = sanitizeSentenceLikeText(section.observation);
+      const observation = sanitizeObservation(section.observation);
       const confidenceReason = sanitizeSentenceLikeText(
         section.confidence.reason
       );
@@ -1081,7 +1302,7 @@ function sanitizeAnalyzeResponse(
       return {
         ...section,
         title: sanitizeSentenceLikeText(section.title),
-        observation: /[.!?]$/.test(observation) ? observation : `${observation}.`,
+        observation,
         evidence: sanitizeBulletBlock(section.evidence),
         recommendation: sanitizeBulletBlock(section.recommendation),
         confidence: {
@@ -1222,13 +1443,22 @@ export async function POST(request: NextRequest) {
       "- Quote short headline or CTA snippets when useful",
       "- Do not invent missing copy",
       '- Avoid generic UX phrases such as "value proposition", "clarity", "engagement", and "optimize"',
-      '- Prefer phrasing such as "does not explain what changes for the user", "does not show a clear next step", and "does not give a reason to trust"',
+      '- When partial information exists, prefer fairness phrasing such as "communicates X, but lacks Y" or "is clear at category level, but not outcome-specific"',
+      "",
+      "BALANCE RULES:",
+      "- If the page shows strong brand signals, high-scale proof, or widely recognized positioning, do not frame the section as an outright weakness by default",
+      "- In those cases, describe the tradeoff clearly",
+      "- Example: a broader brand promise can support positioning while reducing immediate clarity for new users",
+      "- Keep the tone balanced and credible, especially for strong or established products",
       "",
       "GROUNDING REQUIREMENT:",
       "- Use the provided Page Context when available",
       "- Reference actual text, especially headline and CTA labels, explicitly",
       "- Do NOT generalize if real text is available",
       "- Do NOT invent text that is not provided",
+      "- Before critiquing the Hero section, review all available hero content together: title, H1, H2 or supporting copy, headings, and description",
+      "- Use ALL available hero-related text to determine what the page communicates, not just the H1",
+      "- If supporting lines explain what the product does or what category it belongs to, include that context in the analysis",
       '- If headline and CTA text are missing, use other extracted text when available and otherwise say "Not enough information available to verify"',
       "",
       "CONTEXT:",
@@ -1259,9 +1489,18 @@ export async function POST(request: NextRequest) {
       buildSectionRules(sections),
       "",
       "SECTION OUTPUT RULES:",
-      "- title: one short phrase",
+      "- title: a 3 to 5 word judgment label",
+      "- title must be a conclusion, not a description",
+      '- title should read like: "Positioning without outcome", "Split conversion paths", or "Strong scale, limited depth"',
       "- observation: maximum 2 short sentences",
+      "- observation sentence 1 must state the core insight, not just describe the page",
+      "- observation sentence 2 must add either a comparison or an implication",
+      "- observation must expand the title instead of repeating it",
       "- observation must state what the page communicates, what is missing, and why that matters for the user's decision",
+      "- observation must not repeat the same claim twice",
+      '- When partial explanation exists, do not use absolute critique phrases like "does not explain" or "no clarity"',
+      '- avoid "The page says..." phrasing unless quoting is necessary for evidence',
+      "- observation must not restate the title or repeat the same extracted phrase without adding meaning",
       "- evidence: maximum 2 short bullet lines in one string, each line starting with '- '",
       "- evidence must reference extracted text when available and quote headline or CTA text when useful",
       "- evidence must use clean, complete quotes only and must not include broken fragments or partial clauses",
@@ -1278,6 +1517,7 @@ export async function POST(request: NextRequest) {
       "- When competitor text is too thin, say Not enough information available to verify",
       "- Prefer comparison statements like: Competitors use action-specific CTAs like 'Book demo' while the target page uses 'Get started'",
       "- Name the competitors and describe one concrete difference in wording or proof",
+      "- When the target page has strong scale or brand proof, compare the tradeoff instead of calling it simply weaker",
       "",
       "CONFIDENCE RULES:",
       "- HIGH = directly supported by extracted text",
@@ -1300,12 +1540,17 @@ export async function POST(request: NextRequest) {
       '- No hedge words: likely, may, might, probably, suggests',
       '- Every section must explain what the user fails to understand, trust, or decide',
       '- No generic UX phrases',
+      "- No repetition between title and observation",
       "- No broken or partial strings",
       "- No numbering artifacts such as 7. or 1.",
       "- No truncated sentences or trailing ellipses",
+      "- No incomplete comparison fragments such as 'Compared to X, Y, and Z.'",
       '- Every section must be specific, grounded, and actionable',
       "",
       "PAGE CONTEXT:",
+      `- Hero Context: ${[pageContent.title, pageContent.headline, pageContent.description]
+        .filter(Boolean)
+        .join(" | ") || "Not found"}`,
       `- Headline: ${pageContent.headline || "Not found"}`,
       `- CTAs: ${pageContent.ctas.join(", ") || "Not found"}`,
       "",
@@ -1334,7 +1579,7 @@ export async function POST(request: NextRequest) {
             {
               role: "system",
               content:
-                'Generate a concise, structured JSON UX audit for a SaaS landing page. Write like a senior UX strategist. Be direct, calm, specific, and concise. Keep every field under 2 short sentences. Do not use tools. Do not mention that you are an AI model. Use only the extracted content provided, especially the headline, CTA labels, and trust text when available. Do not invent missing copy, headings, buttons, trust signals, or unseen page elements. Only analyze the selected sections. Compare the target page against competitors directly and call out where the target is stronger or weaker. Every insight must answer what the user fails to understand, trust, or decide. Avoid hedging words such as likely, may, might, probably, suggests, typically, and common pattern. Avoid generic UX phrases such as value proposition, clarity, engagement, optimize, decision-grade, persuasive force, and builds confidence. Every sentence must be complete. Do not return broken fragments, numbering artifacts, or trailing ellipses. If evidence is missing, say "Not enough information available to verify".'
+                'Generate a concise, structured JSON UX audit for a SaaS landing page. Write like a senior UX strategist. Be direct, calm, specific, and concise. Keep every field under 2 short sentences. Do not use tools. Do not mention that you are an AI model. Use only the extracted content provided, especially the headline, CTA labels, trust text, title, and description when available. Do not invent missing copy, headings, buttons, trust signals, or unseen page elements. Only analyze the selected sections. Compare the target page against competitors directly and call out where the target is stronger or weaker. If the target page shows strong brand signals, high-scale proof, or widely recognized positioning, describe tradeoffs instead of treating those patterns as automatic weaknesses. Before critiquing the Hero section, review all available hero content together, including title, H1, H2 or supporting lines, headings, and description. Use all available hero-related text to determine what the page communicates, not just the H1. If supporting lines clarify what the product does or what category it belongs to, include that context in the analysis. If partial explanation exists, do not use absolute critique phrasing like "does not explain" or "no clarity"; prefer wording like "communicates X, but lacks Y". Every insight must answer what the user fails to understand, trust, or decide. Section titles must be short judgment labels, and observations must expand those labels instead of repeating them. Avoid hedging words such as likely, may, might, probably, suggests, typically, and common pattern. Avoid generic UX phrases such as value proposition, clarity, engagement, optimize, decision-grade, persuasive force, and builds confidence. Every sentence must be complete. Do not return broken fragments, numbering artifacts, trailing ellipses, or incomplete comparison clauses. If evidence is missing, say "Not enough information available to verify".'
             },
             {
               role: "user",

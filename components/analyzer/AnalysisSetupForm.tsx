@@ -1,10 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
-import { suggestedCompetitors, setupSections } from "@/lib/mock-setup";
+import {
+  getCompetitorLookupKey,
+  getSuggestedCompetitorsForUrl,
+  suggestedCompetitors,
+  setupSections
+} from "@/lib/mock-setup";
 import type { AnalysisSectionKey } from "@/lib/types";
 
 import { CompetitorTags } from "./CompetitorTags";
@@ -20,10 +25,15 @@ export function AnalysisSetupForm() {
   const [selectedSections, setSelectedSections] =
     useState<AnalysisSectionKey[]>(defaultSections);
   const [competitors, setCompetitors] = useState(suggestedCompetitors);
+  const competitorLookupKey = useMemo(() => getCompetitorLookupKey(url), [url]);
 
   const canSubmit = useMemo(() => {
     return url.trim().length > 0 && selectedSections.length > 0;
   }, [selectedSections.length, url]);
+
+  useEffect(() => {
+    setCompetitors(getSuggestedCompetitorsForUrl(url));
+  }, [competitorLookupKey]);
 
   function toggleSection(section: AnalysisSectionKey) {
     setSelectedSections((current) =>
@@ -90,7 +100,7 @@ export function AnalysisSetupForm() {
             Analyze page
           </button>
           <p className="setup-submit-meta">
-            Takes ~10 seconds · No signup required
+            No signup required · ~10 seconds
           </p>
         </div>
       </div>

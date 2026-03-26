@@ -1,6 +1,6 @@
 "use client";
 
-import { suggestedCompetitors } from "@/lib/mock-setup";
+import { competitorCatalog } from "@/lib/mock-setup";
 import type { AnalyzeRequestPayload } from "@/lib/types";
 
 type AnalysisContextHeaderProps = {
@@ -8,7 +8,7 @@ type AnalysisContextHeaderProps = {
 };
 
 const competitorNameByUrl = new Map(
-  suggestedCompetitors.map((competitor) => [competitor.url, competitor.name])
+  competitorCatalog.map((competitor) => [competitor.url, competitor.name])
 );
 
 function formatAnalyzedUrl(url: string) {

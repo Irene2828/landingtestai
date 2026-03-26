@@ -24,6 +24,10 @@ export function UrlField({ value, onChange }: UrlFieldProps) {
           required
         />
       </div>
+
+      <p className="setup-hint">
+        We&apos;ll pull headlines, CTAs, and proof signals for analysis.
+      </p>
     </div>
   );
 }
