@@ -8,6 +8,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
+const FIRECRAWL_SCRAPE_URL =
+  process.env.FIRECRAWL_API_URL ?? "https://api.firecrawl.dev/v2/scrape";
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-5.4-mini";
 const VALID_SECTIONS = ["Hero", "CTA", "Social Proof"] as const;
 const PAGE_FETCH_TIMEOUT_MS = 10000;
@@ -34,6 +36,14 @@ type ExtractedPageContent = {
 type ExtractedCompetitorContent = {
   url: string;
   content: ExtractedPageContent;
+};
+
+type FirecrawlScrapeResponse = {
+  success?: boolean;
+  data?: {
+    html?: string;
+    markdown?: string;
+  };
 };
 
 function isValidUrl(value: string) {
@@ -1028,9 +1038,7 @@ function extractPageContentFromHtml(
   };
 }
 
-async function fetchPageHtml(url: string) {
-  console.log("Fetching page HTML:", url);
-
+async function fetchPageHtmlDirect(url: string) {
   const response = await fetch(url, {
     headers: {
       Accept: "text/html,application/xhtml+xml",
@@ -1083,6 +1091,66 @@ async function fetchPageHtml(url: string) {
   console.log("Page HTML ready:", { url, length: html.length });
 
   return html.slice(0, HTML_PREVIEW_CHAR_LIMIT);
+}
+
+async function fetchPageHtmlWithFirecrawl(url: string, apiKey: string) {
+  console.log("Fetching page HTML with Firecrawl:", url);
+
+  const response = await fetch(FIRECRAWL_SCRAPE_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    cache: "no-store",
+    signal: createTimeoutSignal(PAGE_FETCH_TIMEOUT_MS),
+    body: JSON.stringify({
+      url,
+      waitFor: 2000,
+      formats: ["markdown", "html"],
+      onlyMainContent: true
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Firecrawl scrape failed with status ${response.status}.`);
+  }
+
+  const payload = (await response.json()) as FirecrawlScrapeResponse;
+  const html = typeof payload.data?.html === "string" ? payload.data.html : "";
+
+  if (!html.trim()) {
+    throw new Error("Firecrawl scrape returned empty HTML.");
+  }
+
+  console.log("Firecrawl HTML ready:", { url, length: html.length });
+
+  return html.slice(0, HTML_PREVIEW_CHAR_LIMIT);
+}
+
+async function fetchPageHtml(url: string) {
+  const firecrawlApiKey = process.env.FIRECRAWL_API_KEY;
+
+  console.log("Firecrawl env gate:", {
+    url,
+    firecrawlConfigured: Boolean(firecrawlApiKey),
+    scrapeUrl: FIRECRAWL_SCRAPE_URL
+  });
+
+  if (firecrawlApiKey) {
+    try {
+      return await fetchPageHtmlWithFirecrawl(url, firecrawlApiKey);
+    } catch (error) {
+      console.error("Firecrawl scrape failed, falling back to direct fetch", {
+        url,
+        error: getErrorDetails(error)
+      });
+    }
+  }
+
+  console.log("Fetching page HTML directly:", url);
+
+  return fetchPageHtmlDirect(url);
 }
 
 async function extractPageContentFromUrl(
