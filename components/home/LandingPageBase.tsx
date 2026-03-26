@@ -19,35 +19,40 @@ export function LandingPageBase({ tagline }: LandingPageBaseProps) {
 
       <main className="setup-main">
         <div className="setup-container">
-          <div className="setup-utility-row">
-            <button
-              className="setup-help-trigger"
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={isOpen}
-              onClick={() => setIsOpen(true)}
-            >
-              <span
-                className="material-symbols-outlined setup-help-trigger-icon"
-                aria-hidden="true"
-              >
-                info
-              </span>
-              <span>How it works</span>
-            </button>
-          </div>
-
           <section className="setup-main-column">
             <div className="setup-intro">
-              <h2>
-                <span>
-                  <span className="setup-hero-accent">Evidence-based</span> UX audit
-                </span>
-                <span>for SaaS landing pages</span>
-              </h2>
+              <div className="setup-intro-header">
+                <div className="setup-title-row">
+                  <h1 className="setup-title">
+                    <span>
+                      <span className="setup-hero-accent">Evidence-based</span> UX
+                      audit
+                    </span>
+                    <span>for SaaS landing pages</span>
+                  </h1>
+                  <button
+                    className="setup-help-trigger"
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-expanded={isOpen}
+                    aria-label="How it works"
+                    onClick={() => setIsOpen(true)}
+                  >
+                    <span
+                      className="material-symbols-outlined setup-help-trigger-icon"
+                      aria-hidden="true"
+                    >
+                      info
+                    </span>
+                    <span className="setup-help-trigger-label">How it works</span>
+                  </button>
+                </div>
+              </div>
               <p className="setup-intro-body">
-                Pulls messaging, CTA, and trust signals into one audit with
-                confidence on every finding.
+                Compare your messaging, CTAs, and trust signals to competitors
+                {" \u2014 "}
+                <br />
+                get insights and confidence on every finding
               </p>
             </div>
 

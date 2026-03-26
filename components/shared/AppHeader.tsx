@@ -1,10 +1,14 @@
 import Link from "next/link";
 
+const DEFAULT_TAGLINE = "AI-powered. Designed for designers.";
+
 type AppHeaderProps = {
   tagline?: string;
 };
 
 export function AppHeader({ tagline }: AppHeaderProps) {
+  const resolvedTagline = tagline ?? DEFAULT_TAGLINE;
+
   return (
     <header className="app-header">
       <Link href="/" className="app-brand" aria-label="Go to homepage">
@@ -21,8 +25,13 @@ export function AppHeader({ tagline }: AppHeaderProps) {
           </svg>
         </div>
         <div className="app-brand-copy">
-          <h1>SAAS Landing Page Analyzer</h1>
-          {tagline ? <p className="app-brand-tagline">{tagline}</p> : null}
+          <h1>
+            <span className="app-brand-title-row">
+              <span>SAAS Landing Page Analyzer</span>
+              <span className="app-beta-label">Beta</span>
+            </span>
+          </h1>
+          <p className="app-brand-tagline">{resolvedTagline}</p>
         </div>
       </Link>
 

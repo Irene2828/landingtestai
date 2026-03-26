@@ -1,3 +1,4 @@
+import { splitSentencesPreservingDomains } from "./sentence-utils";
 import type { AnalyzeApiResponse, AnalysisSectionKey, ResultsData } from "./types";
 
 const sectionMeta: Record<
@@ -27,9 +28,7 @@ function extractSectionSummary(observation: string) {
   }
 
   const normalizedFirstLine = firstLine.replace(/^[-*•]\s*/, "").trim();
-  const sentences = normalizedFirstLine.match(/[^.!?]+[.!?]?/g)?.map((sentence) =>
-    sentence.trim()
-  );
+  const sentences = splitSentencesPreservingDomains(normalizedFirstLine);
 
   if (!sentences || sentences.length === 0) {
     return normalizedFirstLine;

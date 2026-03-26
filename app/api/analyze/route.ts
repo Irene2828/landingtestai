@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isLikelyServiceBusiness } from "@/lib/business-type";
+import { splitSentencesPreservingDomains } from "@/lib/sentence-utils";
 import type { AnalyzeApiResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -1136,6 +1137,8 @@ function trimForLog(value: string, maxLength = 4000) {
 
 const COMPARISON_VERB_PATTERN =
   /\b(?:is|are|was|were|has|have|shows?|uses?|offers?|creates?|keeps?|gives?|feels?|reads?|stays?|remains?|adds?|leans?|positions?|leads?|explains?|communicates?|frames?|pairs?|ties?|surfaces?|makes?)\b/i;
+const COMPARISON_SENTENCE_PREFIX_PATTERN =
+  /^(?:Compared (?:to|with)|Unlike|Whereas|Versus|In contrast to|While competitors?)\b/i;
 
 function sanitizeSentenceLikeText(value: string) {
   return stripLeadingNumberArtifact(
@@ -1153,7 +1156,7 @@ function sanitizeSentenceLikeText(value: string) {
 }
 
 function isIncompleteComparisonSentence(value: string) {
-  if (!/^Compared (?:to|with)\b/i.test(value)) {
+  if (!COMPARISON_SENTENCE_PREFIX_PATTERN.test(value)) {
     return false;
   }
 
@@ -1207,10 +1210,9 @@ function sanitizeSummaryItem(value: string) {
 }
 
 function splitIntoSentences(value: string) {
-  return value
-    .match(/[^.!?]+[.!?]?/g)
-    ?.map((sentence) => sanitizeSentenceLikeText(sentence))
-    .filter(Boolean) ?? [];
+  return splitSentencesPreservingDomains(value)
+    .map((sentence) => sanitizeSentenceLikeText(sentence))
+    .filter(Boolean);
 }
 
 function normalizeSentenceForComparison(value: string) {

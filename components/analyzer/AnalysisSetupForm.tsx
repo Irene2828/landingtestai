@@ -17,11 +17,36 @@ import { SectionSelector } from "./SectionSelector";
 import { UrlField } from "./UrlField";
 
 const defaultSections: AnalysisSectionKey[] = ["Hero", "CTA", "Social Proof"];
+const URL_ERROR_MESSAGE = "Enter a valid URL (e.g. https://example.com)";
+
+function normalizeUrlInput(value: string) {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  return `https://${trimmedValue}`;
+}
+
+function isValidNormalizedUrl(value: string) {
+  try {
+    const parsedUrl = new URL(value);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export function AnalysisSetupForm() {
   const router = useRouter();
   const { clearAnalysis } = useAnalysisStore();
   const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [selectedSections, setSelectedSections] =
     useState<AnalysisSectionKey[]>(defaultSections);
   const [competitors, setCompetitors] = useState(suggestedCompetitors);
@@ -49,15 +74,50 @@ export function AnalysisSetupForm() {
     );
   }
 
+  function handleUrlChange(nextUrl: string) {
+    setUrl(nextUrl);
+
+    if (urlError) {
+      setUrlError(null);
+    }
+  }
+
+  function handleUrlBlur() {
+    const normalizedUrl = normalizeUrlInput(url);
+
+    if (normalizedUrl !== url) {
+      setUrl(normalizedUrl);
+    }
+
+    if (!normalizedUrl) {
+      setUrlError(null);
+      return;
+    }
+
+    setUrlError(isValidNormalizedUrl(normalizedUrl) ? null : URL_ERROR_MESSAGE);
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!canSubmit) {
+      setUrlError(URL_ERROR_MESSAGE);
+      return;
+    }
+
+    const normalizedUrl = normalizeUrlInput(url);
+
+    if (normalizedUrl !== url) {
+      setUrl(normalizedUrl);
+    }
+
+    if (!isValidNormalizedUrl(normalizedUrl)) {
+      setUrlError(URL_ERROR_MESSAGE);
       return;
     }
 
     const searchParams = new URLSearchParams({
-      url: url.trim()
+      url: normalizedUrl
     });
 
     selectedSections.forEach((section) => {
@@ -73,8 +133,13 @@ export function AnalysisSetupForm() {
   }
 
   return (
-    <form className="setup-card" onSubmit={handleSubmit}>
-      <UrlField value={url} onChange={setUrl} />
+    <form className="setup-card" onSubmit={handleSubmit} noValidate>
+      <UrlField
+        value={url}
+        onChange={handleUrlChange}
+        onBlur={handleUrlBlur}
+        error={urlError}
+      />
 
       <SectionSelector
         options={setupSections}

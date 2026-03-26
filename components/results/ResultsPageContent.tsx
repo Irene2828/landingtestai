@@ -11,20 +11,26 @@ import { AnalysisAccordion } from "./AnalysisAccordion";
 import { ResultsSummary } from "./ResultsSummary";
 
 export function ResultsPageContent() {
-  const { request, result } = useAnalysisStore();
+  const { request, result, isHydrated } = useAnalysisStore();
+
+  if (!isHydrated) {
+    return <main className="app-shell" />;
+  }
 
   if (!result) {
     return (
       <main className="app-shell">
         <div className="empty-state">
-          <h1>No analysis available</h1>
+          <h2 className="empty-state-title">No analysis available</h2>
           <p>
             Start from the setup page to generate a landing page analysis for
             the selected sections.
           </p>
-          <Link href="/" className="primary-link">
-            Back to setup
-          </Link>
+          <div className="empty-state-actions">
+            <Link href="/" className="primary-link">
+              Back to setup
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -51,11 +57,12 @@ export function ResultsPageContent() {
               </span>
             </Link>
           </div>
-          <h1>The Result</h1>
+          <h2 className="page-title">Audit Results</h2>
           <p className="page-intro">
             Structured insights based on page content and competitor
-            comparisons. Visual analysis is coming next.
+            comparisons.
           </p>
+          <p className="page-coming-next">Visual analysis is coming next.</p>
           {showServiceBusinessNote ? (
             <p className="page-intro page-intro-note">
               This page appears to be a service-based business. Analysis focuses

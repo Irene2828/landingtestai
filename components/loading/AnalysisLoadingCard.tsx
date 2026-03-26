@@ -6,7 +6,7 @@ import {
   useRouter,
   useSearchParams
 } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
 import { competitorCatalog, loadingSteps } from "@/lib/mock-setup";
@@ -94,7 +94,7 @@ function AnalysisLoadingCardView({
           </span>
         </div>
 
-        <h1>Analyzing your landing page</h1>
+        <h2 className="loading-card-title">Analyzing your landing page</h2>
         <p>
           Reviewing structure, messaging, and competitive positioning.
         </p>
@@ -131,7 +131,7 @@ function AnalysisLoadingCardView({
               </div>
 
               <div className="loading-step-copy">
-                <h2>{step.title}</h2>
+                <h3>{step.title}</h3>
                 <p>{step.description}</p>
               </div>
             </div>
@@ -180,16 +180,11 @@ export function AnalysisLoadingCard() {
   const { clearAnalysis, setAnalysis } = useAnalysisStore();
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const hasRunRef = useRef(false);
   const request = useMemo(
     () => getRequestFromSearchParams(searchParams),
     [searchParams]
   );
   const requestKey = `${request.url}:${request.sections.join("|")}:${request.competitorUrls?.join("|") ?? ""}:${attempt}`;
-
-  useEffect(() => {
-    hasRunRef.current = false;
-  }, [requestKey]);
 
   useEffect(() => {
     let isActive = true;
@@ -203,12 +198,6 @@ export function AnalysisLoadingCard() {
         isActive = false;
       };
     }
-
-    if (hasRunRef.current) {
-      return;
-    }
-
-    hasRunRef.current = true;
     setError(null);
     clearAnalysis();
 
@@ -343,7 +332,6 @@ export function AnalysisLoadingCard() {
   }, [clearAnalysis, request, requestKey, router, setAnalysis]);
 
   function handleRetry() {
-    hasRunRef.current = false;
     setAttempt((currentAttempt) => currentAttempt + 1);
   }
 

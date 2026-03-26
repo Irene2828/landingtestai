@@ -54,7 +54,7 @@ export function ResultsSummary({
           key={card.key}
           className={`summary-card ${card.className}`.trim()}
         >
-          <h2>{card.title}</h2>
+          <h3>{card.title}</h3>
           <ul>
             {itemsByKey[card.key].map((item) => {
               if (card.key !== "actions") {

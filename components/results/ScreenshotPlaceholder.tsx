@@ -3,13 +3,12 @@ type ScreenshotPlaceholderProps = {
 };
 
 export function ScreenshotPlaceholder({
-  label
+  label: _label
 }: ScreenshotPlaceholderProps) {
   return (
     <div className="screenshot-placeholder" aria-hidden="true">
       <div className="screenshot-placeholder-inner">
-        <span className="screenshot-placeholder-label">Visual reference</span>
-        <strong>{label}</strong>
+        <span className="screenshot-placeholder-note">Visual insight coming</span>
       </div>
     </div>
   );
