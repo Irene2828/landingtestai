@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
 import {
-  getCompetitorLookupKey,
   getSuggestedCompetitorsForUrl,
   suggestedCompetitors,
   setupSections
@@ -50,7 +49,6 @@ export function AnalysisSetupForm() {
   const [selectedSections, setSelectedSections] =
     useState<AnalysisSectionKey[]>(defaultSections);
   const [competitors, setCompetitors] = useState(suggestedCompetitors);
-  const competitorLookupKey = useMemo(() => getCompetitorLookupKey(url), [url]);
 
   const canSubmit = useMemo(() => {
     return url.trim().length > 0 && selectedSections.length > 0;
@@ -58,7 +56,7 @@ export function AnalysisSetupForm() {
 
   useEffect(() => {
     setCompetitors(getSuggestedCompetitorsForUrl(url));
-  }, [competitorLookupKey]);
+  }, [url]);
 
   function toggleSection(section: AnalysisSectionKey) {
     setSelectedSections((current) =>

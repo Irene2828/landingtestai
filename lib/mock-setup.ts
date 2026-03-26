@@ -119,6 +119,24 @@ export const suggestedCompetitors: CompetitorSuggestion[] = competitorLookup.def
   .map((id) => competitorById.get(id))
   .filter((value): value is CompetitorSuggestion => Boolean(value));
 
+const IGNORED_HOST_TOKENS = new Set([
+  "www",
+  "com",
+  "app",
+  "so",
+  "io",
+  "co",
+  "net",
+  "org",
+  "ai",
+  "dev",
+  "google"
+]);
+
+function normalizeSiteToken(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 function getNormalizedHostname(url: string) {
   const normalizedUrl = url.trim();
 
@@ -135,6 +153,34 @@ function getNormalizedHostname(url: string) {
   } catch {
     return null;
   }
+}
+
+function getComparableHostnameTokens(url: string) {
+  const hostname = getNormalizedHostname(url);
+
+  if (!hostname) {
+    return [];
+  }
+
+  return hostname
+    .split(".")
+    .map((token) => normalizeSiteToken(token))
+    .filter((token) => token && !IGNORED_HOST_TOKENS.has(token));
+}
+
+function matchesSuggestedCompetitor(url: string, competitor: CompetitorSuggestion) {
+  const targetTokens = new Set(getComparableHostnameTokens(url));
+
+  if (targetTokens.size === 0) {
+    return false;
+  }
+
+  const competitorTokens = [
+    normalizeSiteToken(competitor.id),
+    ...getComparableHostnameTokens(competitor.url)
+  ].filter(Boolean);
+
+  return competitorTokens.some((token) => targetTokens.has(token));
 }
 
 export function getCompetitorLookupKey(url: string) {
@@ -163,7 +209,8 @@ export function getSuggestedCompetitorsForUrl(url: string) {
 
   return competitorIds
     .map((id) => competitorById.get(id))
-    .filter((value): value is CompetitorSuggestion => Boolean(value));
+    .filter((value): value is CompetitorSuggestion => Boolean(value))
+    .filter((competitor) => !matchesSuggestedCompetitor(url, competitor));
 }
 
 export const loadingSteps: LoadingStep[] = [
