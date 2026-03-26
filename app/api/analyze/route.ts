@@ -15,6 +15,8 @@ const VALID_SECTIONS = ["Hero", "CTA", "Social Proof"] as const;
 const PAGE_FETCH_TIMEOUT_MS = 10000;
 const OPENAI_REQUEST_TIMEOUT_MS = 20000;
 const HTML_PREVIEW_CHAR_LIMIT = 2500000;
+const PROMPT_FIELD_CHAR_LIMIT = 2000;
+const TRUNCATED_TEXT_SUFFIX = " [truncated]";
 
 type ValidSection = (typeof VALID_SECTIONS)[number];
 
@@ -506,6 +508,95 @@ function formatPageContentForPrompt(
     "Trust Signals:",
     formatListForPrompt(content.trustSignals)
   ].join("\n");
+}
+
+function truncateTextForPrompt(value: string, maxLength: number) {
+  const trimmed = value.trim();
+
+  if (!trimmed || trimmed.length <= maxLength) {
+    return trimmed;
+  }
+
+  if (maxLength <= TRUNCATED_TEXT_SUFFIX.length) {
+    return trimmed.slice(0, maxLength).trimEnd();
+  }
+
+  const clipLength = maxLength - TRUNCATED_TEXT_SUFFIX.length;
+  let clipped = trimmed.slice(0, clipLength).trimEnd();
+  const lastWhitespaceIndex = clipped.lastIndexOf(" ");
+
+  if (lastWhitespaceIndex >= Math.floor(clipLength * 0.6)) {
+    clipped = clipped.slice(0, lastWhitespaceIndex).trimEnd();
+  }
+
+  return `${clipped}${TRUNCATED_TEXT_SUFFIX}`;
+}
+
+function truncateTextGroupForPrompt(values: string[], maxLength: number) {
+  const truncatedValues: string[] = [];
+  let usedLength = 0;
+
+  for (const value of values) {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      truncatedValues.push("");
+      continue;
+    }
+
+    const remainingLength = maxLength - usedLength;
+
+    if (remainingLength <= 0) {
+      truncatedValues.push("");
+      continue;
+    }
+
+    const truncatedValue = truncateTextForPrompt(trimmed, remainingLength);
+    truncatedValues.push(truncatedValue);
+    usedLength += truncatedValue.length;
+
+    if (truncatedValue !== trimmed) {
+      break;
+    }
+  }
+
+  while (truncatedValues.length < values.length) {
+    truncatedValues.push("");
+  }
+
+  return truncatedValues;
+}
+
+function truncatePageContentForPrompt(
+  content: ExtractedPageContent
+): ExtractedPageContent {
+  const [title, headline, description, ...headings] = truncateTextGroupForPrompt(
+    [content.title, content.headline, content.description, ...content.headings],
+    PROMPT_FIELD_CHAR_LIMIT
+  );
+
+  return {
+    title,
+    headline,
+    headings: headings.filter(Boolean),
+    ctas: truncateTextGroupForPrompt(content.ctas, PROMPT_FIELD_CHAR_LIMIT).filter(
+      Boolean
+    ),
+    description,
+    trustSignals: truncateTextGroupForPrompt(
+      content.trustSignals,
+      PROMPT_FIELD_CHAR_LIMIT
+    ).filter(Boolean)
+  };
+}
+
+function truncateCompetitorContentForPrompt(
+  competitorContent: ExtractedCompetitorContent[]
+) {
+  return competitorContent.map((competitor) => ({
+    ...competitor,
+    content: truncatePageContentForPrompt(competitor.content)
+  }));
 }
 
 function getCompetitorName(
@@ -1639,6 +1730,9 @@ export async function POST(request: NextRequest) {
 
     pageContent = targetContent;
     competitorContent = resolvedCompetitors;
+    const promptPageContent = truncatePageContentForPrompt(pageContent);
+    const promptCompetitorContent =
+      truncateCompetitorContentForPrompt(competitorContent);
 
     console.log("Extracted target content:", pageContent);
     console.log("Extracted headline:", pageContent.headline);
@@ -1791,12 +1885,12 @@ export async function POST(request: NextRequest) {
       'Bad: "This is weaker than competitors."',
       'Good: "This is more brand-led, while competitors emphasize immediate task outcomes, which makes the offer feel broader on first read."',
       'Bad: "The CTA could be more specific."',
-      `Good: "The CTA "${pageContent.ctas[0] || "Get started"}" keeps entry friction low, while competitors explain the first step more explicitly."`,
+      `Good: "The CTA "${promptPageContent.ctas[0] || "Get started"}" keeps entry friction low, while competitors explain the first step more explicitly."`,
       'Better CTA tone: "CTA keeps the next step simple, but does not clarify what happens after click."',
       'Bad: "Social proof is not decision-grade."',
       'Good: "The page relies on brand authority rather than explicit customer proof, so trust comes more from reputation than named validation."',
       'Bad recommendation: "Improve CTA clarity."',
-      `Good recommendation: "Replace "${pageContent.ctas[0] || "Get started"}" with an outcome-driven action that tells the user what happens next."`,
+      `Good recommendation: "Replace "${promptPageContent.ctas[0] || "Get started"}" with an outcome-driven action that tells the user what happens next."`,
       "",
       "QUALITY TEST (MUST PASS BEFORE RETURNING JSON):",
       '- No hedge words: likely, may, might, probably, suggests',
@@ -1817,17 +1911,21 @@ export async function POST(request: NextRequest) {
       isServiceBusiness
         ? "- This page appears to be a service-based business. Analysis should focus on positioning and credibility rather than product comparison."
         : "- This page appears to be a product-led SaaS page unless the extracted content shows otherwise.",
-      `- Hero Context: ${[pageContent.title, pageContent.headline, pageContent.description]
+      `- Hero Context: ${[
+        promptPageContent.title,
+        promptPageContent.headline,
+        promptPageContent.description
+      ]
         .filter(Boolean)
         .join(" | ") || "Not found"}`,
-      `- Headline: ${pageContent.headline || "Not found"}`,
-      `- CTAs: ${pageContent.ctas.join(", ") || "Not found"}`,
+      `- Headline: ${promptPageContent.headline || "Not found"}`,
+      `- CTAs: ${promptPageContent.ctas.join(", ") || "Not found"}`,
       "",
       "EXTRACTED CONTENT:",
       "",
-      formatPageContentForPrompt("Target page", pageContent),
+      formatPageContentForPrompt("Target page", promptPageContent),
       "",
-      formatCompetitorContentForPrompt(competitorContent)
+      formatCompetitorContentForPrompt(promptCompetitorContent)
     ].join("\n");
 
     console.log("Final prompt payload:", trimForLog(prompt));
