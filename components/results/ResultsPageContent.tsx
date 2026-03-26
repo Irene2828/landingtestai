@@ -62,7 +62,10 @@ export function ResultsPageContent() {
             Structured insights based on page content and competitor
             comparisons.
           </p>
-          <p className="page-coming-next">Visual analysis is coming next.</p>
+          <p className="page-coming-next">
+            Visual analysis is coming next. Some elements may not be captured
+            yet.
+          </p>
           {showServiceBusinessNote ? (
             <p className="page-intro page-intro-note">
               This page appears to be a service-based business. Analysis focuses

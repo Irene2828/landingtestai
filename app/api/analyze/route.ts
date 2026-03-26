@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { isLikelyServiceBusiness } from "@/lib/business-type";
 import { splitSentencesPreservingDomains } from "@/lib/sentence-utils";
-import type { AnalyzeApiResponse } from "@/lib/types";
+import type { AnalyzeApiResponse, ConfidenceLevel } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,7 +131,7 @@ function buildResponseSchema(selectedSections: ValidSection[]) {
               properties: {
                 level: {
                   type: "string",
-                  enum: ["HIGH", "MEDIUM", "LOW"]
+                  enum: ["HIGH", "LOW"]
                 },
                 reason: {
                   type: "string"
@@ -453,6 +453,10 @@ const CTA_KEYWORD_PATTERN =
   /\b(?:book|start|get|try|request|schedule|demo)\b/i;
 
 const MISSING_INFORMATION_TEXT = "Not enough information available to verify";
+const NO_CLEAR_EVIDENCE_TEXT = "No clear evidence found in extracted content";
+const LIMITED_VISIBILITY_TEXT = "This may not be visible in extracted content";
+
+type EvidenceCoverage = "clear" | "partial" | "missing";
 
 function formatListForPrompt(values: string[]) {
   return values.length > 0
@@ -1208,6 +1212,59 @@ function sanitizeBulletBlock(value: string) {
     .join("\n");
 }
 
+function isMissingEvidenceText(value: string) {
+  const normalized = sanitizeSentenceLikeText(value).toLowerCase();
+
+  return (
+    normalized.includes(MISSING_INFORMATION_TEXT.toLowerCase()) ||
+    normalized.includes(NO_CLEAR_EVIDENCE_TEXT.toLowerCase())
+  );
+}
+
+function sanitizeEvidenceBlock(value: string): {
+  text: string;
+  coverage: EvidenceCoverage;
+} {
+  const rawLines = value
+    .split(/\n+/)
+    .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+    .filter(Boolean);
+
+  let hadMissingEvidenceMarker = false;
+
+  const sanitizedLines = dedupeNonEmpty(
+    rawLines
+      .map((line) => sanitizeSentenceLikeText(line))
+      .filter((line) => {
+        if (!line || isIncompleteInsightSentence(line)) {
+          return false;
+        }
+
+        if (isMissingEvidenceText(line)) {
+          hadMissingEvidenceMarker = true;
+          return false;
+        }
+
+        return true;
+      }),
+    2
+  );
+
+  if (sanitizedLines.length === 0) {
+    return {
+      text: `${NO_CLEAR_EVIDENCE_TEXT}.`,
+      coverage: "missing"
+    };
+  }
+
+  return {
+    text: sanitizedLines
+      .map((line) => (/[.!?]$/.test(line) ? `- ${line}` : `- ${line}.`))
+      .join("\n"),
+    coverage: hadMissingEvidenceMarker ? "partial" : "clear"
+  };
+}
+
 function sanitizeSummaryItem(value: string) {
   return sanitizeSentenceLikeText(value)
     .replace(/[,:;]\s*$/g, "")
@@ -1288,6 +1345,107 @@ function sanitizeObservation(value: string) {
     .join(" ");
 }
 
+function polishObservationPhrases(value: string) {
+  return value
+    .replace(
+      /\b(?:The\s+)?CTA does not state the next step\b/gi,
+      "CTA keeps the next step simple, but does not clarify what happens after click"
+    );
+}
+
+function softenObservationTone(value: string) {
+  return polishObservationPhrases(value)
+    .replace(/\bdoes not\b/gi, "may not")
+    .replace(/\bdo not\b/gi, "may not")
+    .replace(/\bis not\b/gi, "may not be")
+    .replace(/\bare not\b/gi, "may not be")
+    .replace(/\blacks\b/gi, "may lack")
+    .replace(/\black\b/gi, "may lack");
+}
+
+function normalizeObservationForEvidence(
+  value: string,
+  coverage: EvidenceCoverage
+) {
+  if (!value || value === MISSING_INFORMATION_TEXT) {
+    return coverage === "missing" ? `${LIMITED_VISIBILITY_TEXT}.` : value;
+  }
+
+  if (coverage === "clear") {
+    return polishObservationPhrases(value);
+  }
+
+  const softenedSentences = splitIntoSentences(softenObservationTone(value));
+
+  if (softenedSentences.length === 0) {
+    return coverage === "missing" ? `${LIMITED_VISIBILITY_TEXT}.` : value;
+  }
+
+  const normalizedSentences = softenedSentences.slice(0, 2);
+
+  if (
+    coverage === "missing" &&
+    !normalizedSentences.some((sentence) =>
+      /extracted content|visible in extracted content/i.test(sentence)
+    )
+  ) {
+    if (normalizedSentences.length >= 2) {
+      normalizedSentences[normalizedSentences.length - 1] = LIMITED_VISIBILITY_TEXT;
+    } else {
+      normalizedSentences.push(LIMITED_VISIBILITY_TEXT);
+    }
+  }
+
+  return normalizedSentences
+    .map((sentence) => (/[.!?]$/.test(sentence) ? sentence : `${sentence}.`))
+    .join(" ");
+}
+
+function normalizeConfidenceForEvidence(
+  level: string,
+  reason: string,
+  coverage: EvidenceCoverage
+): { level: ConfidenceLevel; reason: string } {
+  const sanitizedReason = sanitizeSentenceLikeText(reason);
+  const normalizedLevel: ConfidenceLevel = level === "HIGH" ? "HIGH" : "LOW";
+
+  if (coverage === "missing") {
+    return {
+      level: "LOW" as const,
+      reason: `${NO_CLEAR_EVIDENCE_TEXT}.`
+    };
+  }
+
+  if (coverage === "partial") {
+    return {
+      level: "LOW",
+      reason:
+        sanitizedReason && !isMissingEvidenceText(sanitizedReason)
+          ? /[.!?]$/.test(sanitizedReason)
+            ? sanitizedReason
+            : `${sanitizedReason}.`
+          : "Based on partial extracted signals, so confidence stays low."
+    };
+  }
+
+  if (sanitizedReason) {
+    return {
+      level: normalizedLevel,
+      reason: /[.!?]$/.test(sanitizedReason)
+        ? sanitizedReason
+        : `${sanitizedReason}.`
+    };
+  }
+
+  return {
+    level: normalizedLevel,
+    reason:
+      normalizedLevel === "HIGH"
+        ? "Based on directly extracted text."
+        : `${NO_CLEAR_EVIDENCE_TEXT}.`
+  };
+}
+
 function sanitizeAnalyzeResponse(
   response: AnalyzeApiResponse
 ): AnalyzeApiResponse {
@@ -1302,23 +1460,26 @@ function sanitizeAnalyzeResponse(
         .filter(Boolean)
     },
     sections: response.sections.map((section) => {
-      const observation = sanitizeObservation(section.observation);
-      const confidenceReason = sanitizeSentenceLikeText(
-        section.confidence.reason
+      const { text: evidence, coverage } = sanitizeEvidenceBlock(
+        section.evidence
+      );
+      const observation = normalizeObservationForEvidence(
+        sanitizeObservation(section.observation),
+        coverage
+      );
+      const confidence = normalizeConfidenceForEvidence(
+        section.confidence.level,
+        section.confidence.reason,
+        coverage
       );
 
       return {
         ...section,
         title: sanitizeSentenceLikeText(section.title),
         observation,
-        evidence: sanitizeBulletBlock(section.evidence),
+        evidence,
         recommendation: sanitizeBulletBlock(section.recommendation),
-        confidence: {
-          ...section.confidence,
-          reason: /[.!?]$/.test(confidenceReason)
-            ? confidenceReason
-            : `${confidenceReason}.`
-        }
+        confidence
       };
     })
   };
@@ -1518,6 +1679,8 @@ export async function POST(request: NextRequest) {
       "- observation must state what the page communicates, what is missing, and why that matters for the user's decision",
       "- observation must not repeat the same claim twice",
       '- When partial explanation exists, do not use absolute critique phrases like "does not explain" or "no clarity"',
+      "- If evidence is missing or incomplete, observation tone must soften and avoid definitive claims",
+      '- If evidence is missing, prefer phrasing like "may not be visible in extracted content"',
       "- When the difference appears intentional, observation should explain the tradeoff instead of treating the pattern as a pure flaw",
       "- Prefer tradeoff phrasing like: This is more X, while competitors emphasize Y, which makes Z",
       '- avoid "The page says..." phrasing unless quoting is necessary for evidence',
@@ -1525,10 +1688,11 @@ export async function POST(request: NextRequest) {
       "- evidence: maximum 2 short bullet lines in one string, each line starting with '- '",
       "- evidence must reference extracted text when available and quote headline or CTA text when useful",
       "- evidence must use clean, complete quotes only and must not include broken fragments or partial clauses",
+      '- If no clear evidence is found, evidence must say "No clear evidence found in extracted content"',
       "- recommendation: maximum 2 short bullet lines in one string, each line starting with '- '",
       "- recommendation must say what to change and how to change it",
       "- recommendation must stay specific and concrete",
-      "- confidence.level must be exactly HIGH, MEDIUM, or LOW",
+      "- confidence.level must be exactly HIGH or LOW",
       "- confidence.reason: one short sentence using simple wording",
       "",
       "COMPARISON RULES:",
@@ -1546,8 +1710,10 @@ export async function POST(request: NextRequest) {
       "",
       "CONFIDENCE RULES:",
       "- HIGH = directly supported by extracted text",
-      "- MEDIUM = partially supported by extracted text",
-      "- LOW = insufficient text evidence",
+      "- LOW = partially supported, uncertain, or insufficient text evidence",
+      "- MEDIUM is not a valid confidence value",
+      '- If evidence says "Not enough information available to verify" or "No clear evidence found in extracted content", confidence cannot be HIGH',
+      "- If confidence is uncertain, resolve it to LOW and explain why in confidence.reason",
       "- Confidence reason must be short and explicit",
       "- Use simple confidence reasons like 'Based on directly extracted text' or 'Not enough information available to verify this claim'",
       "",
@@ -1558,6 +1724,7 @@ export async function POST(request: NextRequest) {
       'Good: "This is more brand-led, while competitors emphasize immediate task outcomes, which makes the offer feel broader on first read."',
       'Bad: "The CTA could be more specific."',
       `Good: "The CTA "${pageContent.ctas[0] || "Get started"}" keeps entry friction low, while competitors explain the first step more explicitly."`,
+      'Better CTA tone: "CTA keeps the next step simple, but does not clarify what happens after click."',
       'Bad: "Social proof is not decision-grade."',
       'Good: "The page relies on brand authority rather than explicit customer proof, so trust comes more from reputation than named validation."',
       'Bad recommendation: "Improve CTA clarity."',
@@ -1569,6 +1736,8 @@ export async function POST(request: NextRequest) {
       '- No generic UX phrases',
       "- Do not treat competitor patterns as automatic defaults",
       "- If a difference appears intentional, explain the tradeoff",
+      "- Do not allow HIGH confidence when evidence is missing or incomplete",
+      "- Do not return MEDIUM",
       "- No repetition between title and observation",
       "- No broken or partial strings",
       "- No numbering artifacts such as 7. or 1.",
@@ -1611,7 +1780,7 @@ export async function POST(request: NextRequest) {
             {
               role: "system",
               content:
-                'Generate a concise, structured JSON UX audit for a SaaS landing page. Write like a senior UX strategist. Be direct, calm, specific, and concise. Keep every field under 2 short sentences. Do not use tools. Do not mention that you are an AI model. Use only the extracted content provided, especially the headline, CTA labels, trust text, title, and description when available. Do not invent missing copy, headings, buttons, trust signals, or unseen page elements. Only analyze the selected sections. Compare the target page against competitors directly, but do not assume competitor patterns are always better. Explain differences in emphasis, proof, friction, and positioning. When a difference appears intentional or strategy-led, frame it as a tradeoff rather than a flaw. If the target page shows strong brand signals, high-scale proof, or widely recognized positioning, describe tradeoffs instead of treating those patterns as automatic weaknesses. Before critiquing the Hero section, review all available hero content together, including title, H1, H2 or supporting lines, headings, and description. Use all available hero-related text to determine what the page communicates, not just the H1. If supporting lines clarify what the product does or what category it belongs to, include that context in the analysis. If partial explanation exists, do not use absolute critique phrasing like "does not explain" or "no clarity"; prefer wording like "communicates X, but lacks Y". Do not treat a short CTA such as "Try X" as automatically unclear if it supports product-led, low-friction entry. If social proof is light but the page leans on brand authority, research positioning, technical expertise, or reputation, describe that pattern as reliance on brand authority rather than explicit proof. Every insight must answer what the user fails to understand, trust, or decide. Section titles must be short judgment labels, and observations must expand those labels instead of repeating them. Avoid hedging words such as likely, may, might, probably, suggests, typically, and common pattern. Avoid generic UX phrases such as value proposition, clarity, engagement, optimize, decision-grade, persuasive force, and builds confidence. Every sentence must be complete. Do not return broken fragments, numbering artifacts, trailing ellipses, or incomplete comparison clauses. If evidence is missing, say "Not enough information available to verify".'
+                'Generate a concise, structured JSON UX audit for a SaaS landing page. Write like a senior UX strategist. Be direct, calm, specific, and concise. Keep every field under 2 short sentences. Do not use tools. Do not mention that you are an AI model. Use only the extracted content provided, especially the headline, CTA labels, trust text, title, and description when available. Do not invent missing copy, headings, buttons, trust signals, or unseen page elements. Only analyze the selected sections. Compare the target page against competitors directly, but do not assume competitor patterns are always better. Explain differences in emphasis, proof, friction, and positioning. When a difference appears intentional or strategy-led, frame it as a tradeoff rather than a flaw. If the target page shows strong brand signals, high-scale proof, or widely recognized positioning, describe tradeoffs instead of treating those patterns as automatic weaknesses. Before critiquing the Hero section, review all available hero content together, including title, H1, H2 or supporting lines, headings, and description. Use all available hero-related text to determine what the page communicates, not just the H1. If supporting lines clarify what the product does or what category it belongs to, include that context in the analysis. If partial explanation exists, do not use absolute critique phrasing like "does not explain" or "no clarity"; prefer wording like "communicates X, but lacks Y". Do not treat a short CTA such as "Try X" as automatically unclear if it supports product-led, low-friction entry. If social proof is light but the page leans on brand authority, research positioning, technical expertise, or reputation, describe that pattern as reliance on brand authority rather than explicit proof. If evidence is missing, use "No clear evidence found in extracted content", keep the observation tentative, and never return HIGH confidence. Confidence is strictly binary: only HIGH or LOW are valid values. MEDIUM is not valid. If confidence is uncertain, partial, or incomplete, resolve it to LOW and state the reason clearly. Every insight must answer what the user fails to understand, trust, or decide. Section titles must be short judgment labels, and observations must expand those labels instead of repeating them. Avoid hedging words such as likely, may, might, probably, suggests, typically, and common pattern. Avoid generic UX phrases such as value proposition, clarity, engagement, optimize, decision-grade, persuasive force, and builds confidence. Every sentence must be complete. Do not return broken fragments, numbering artifacts, trailing ellipses, or incomplete comparison clauses.'
             },
             {
               role: "user",

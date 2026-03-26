@@ -1,4 +1,4 @@
-export type ConfidenceLevel = "HIGH" | "MEDIUM" | "LOW";
+export type ConfidenceLevel = "HIGH" | "LOW";
 
 export type AnalysisSectionKey = "Hero" | "CTA" | "Social Proof";
 
