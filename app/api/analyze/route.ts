@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isLikelyServiceBusiness } from "@/lib/business-type";
 import type { AnalyzeApiResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -1418,6 +1419,12 @@ export async function POST(request: NextRequest) {
             )
             .join(", ")
         : MISSING_INFORMATION_TEXT;
+    const isServiceBusiness = isLikelyServiceBusiness(url, [
+      pageContent.title,
+      pageContent.headline,
+      pageContent.description,
+      ...pageContent.headings
+    ]);
 
     const prompt = [
       "You are a senior UX strategist analyzing a SaaS landing page.",
@@ -1450,6 +1457,7 @@ export async function POST(request: NextRequest) {
       "- In those cases, describe the tradeoff clearly",
       "- Example: a broader brand promise can support positioning while reducing immediate clarity for new users",
       "- Keep the tone balanced and credible, especially for strong or established products",
+      "- If the page represents a service business such as an agency, focus the analysis on positioning, credibility, differentiation, and proof rather than product feature comparison",
       "",
       "GROUNDING REQUIREMENT:",
       "- Use the provided Page Context when available",
@@ -1465,8 +1473,9 @@ export async function POST(request: NextRequest) {
       `- URL: ${url}`,
       `- Sections: ${sections.join(", ")}`,
       `- Competitor context: ${competitorContext}`,
+      `- Service business: ${isServiceBusiness ? "Yes" : "No"}`,
       "",
-      "Assume this is a modern SaaS or B2B landing page where clarity and conversion matter.",
+      "Assume this is a modern commercial landing page where clarity, trust, and conversion matter.",
       "",
       "OUTPUT FORMAT (STRICT):",
       "Return JSON with the schema already enforced by this app:",
@@ -1548,6 +1557,9 @@ export async function POST(request: NextRequest) {
       '- Every section must be specific, grounded, and actionable',
       "",
       "PAGE CONTEXT:",
+      isServiceBusiness
+        ? "- This page appears to be a service-based business. Analysis should focus on positioning and credibility rather than product comparison."
+        : "- This page appears to be a product-led SaaS page unless the extracted content shows otherwise.",
       `- Hero Context: ${[pageContent.title, pageContent.headline, pageContent.description]
         .filter(Boolean)
         .join(" | ") || "Not found"}`,

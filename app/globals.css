@@ -1413,6 +1413,13 @@ button {
   color: var(--text-soft);
 }
 
+.page-intro-note {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
 .analysis-section {
   display: grid;
   gap: 14px;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { isLikelyServiceBusiness } from "@/lib/business-type";
 import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
 import { mapAnalysisResponseToResults } from "@/lib/analysis-results";
 
@@ -30,6 +31,9 @@ export function ResultsPageContent() {
   }
 
   const results = mapAnalysisResponseToResults(result);
+  const showServiceBusinessNote = request
+    ? isLikelyServiceBusiness(request.url)
+    : false;
 
   return (
     <main className="app-shell">
@@ -52,6 +56,12 @@ export function ResultsPageContent() {
             Structured insights based on page content and competitor
             comparisons. Visual analysis is coming next.
           </p>
+          {showServiceBusinessNote ? (
+            <p className="page-intro page-intro-note">
+              This page appears to be a service-based business. Analysis focuses
+              on positioning and credibility rather than product comparison.
+            </p>
+          ) : null}
         </header>
 
         <ResultsSummary
