@@ -1110,19 +1110,24 @@ function buildSectionRules(selectedSections: ValidSection[]) {
       "- Hero: treat the meta description as supporting hero text when it clarifies the product, category, or user outcome.",
       "- Hero: do not ignore supporting lines if they clarify what the product does, the category, or the user outcome.",
       "- Hero: use ALL available hero-related text to determine what the page communicates, not just the H1.",
-      "- Hero: compare what the page says, what changes for the user, and whether the first screen shows one clear next step using the full hero context, not just the main headline."
+      "- Hero: compare what the page says, what changes for the user, and whether the first screen shows one clear next step using the full hero context, not just the main headline.",
+      "- Hero: before calling a broader promise a weakness, consider whether it reflects deliberate brand-level or category-level positioning. If it does, explain the tradeoff against more specific competitor framing."
     );
   }
 
   if (selectedSections.includes("CTA")) {
     rules.push(
-      "- CTA: compare CTA wording, what happens next, and whether one action leads using extracted button text and button-like links."
+      "- CTA: compare CTA wording, what happens next, and whether one action leads using extracted button text and button-like links.",
+      "- CTA: do not treat a short CTA such as 'Try X' or 'Get started' as automatically unclear. First evaluate whether it supports product-led growth or low-friction entry.",
+      "- CTA: if the CTA is intentionally simple, explain the tradeoff between low friction and how clearly the first step or outcome is described."
     );
   }
 
   if (selectedSections.includes("Social Proof")) {
     rules.push(
-      "- Social Proof: compare customer proof, logos, reviews, certifications, and quantified credibility language using extracted trust-signal text, headings, and meta description."
+      "- Social Proof: compare customer proof, logos, reviews, certifications, and quantified credibility language using extracted trust-signal text, headings, and meta description.",
+      "- Social Proof: if explicit proof is limited, check whether the page leans on brand authority, research positioning, technical expertise, or reputation instead.",
+      "- Social Proof: when that authority-led pattern is present, describe the page as relying on brand authority rather than explicit proof, not as an automatic weakness."
     );
   }
 
@@ -1458,6 +1463,9 @@ export async function POST(request: NextRequest) {
       "- If the page shows strong brand signals, high-scale proof, or widely recognized positioning, do not frame the section as an outright weakness by default",
       "- In those cases, describe the tradeoff clearly",
       "- Example: a broader brand promise can support positioning while reducing immediate clarity for new users",
+      "- Do not assume competitor patterns are automatically better or more correct",
+      "- Before labeling something as a weakness, ask whether it reflects intentional positioning, a different sales motion, or a different product strategy",
+      "- If the difference appears intentional, frame it as a tradeoff and explain the impact on the buyer's first impression or decision",
       "- Keep the tone balanced and credible, especially for strong or established products",
       "- If the page represents a service business such as an agency, focus the analysis on positioning, credibility, differentiation, and proof rather than product feature comparison",
       "",
@@ -1477,7 +1485,7 @@ export async function POST(request: NextRequest) {
       `- Competitor context: ${competitorContext}`,
       `- Service business: ${isServiceBusiness ? "Yes" : "No"}`,
       "",
-      "Assume this is a modern commercial landing page where clarity, trust, and conversion matter.",
+      "Assume this is a modern commercial landing page where clarity, trust, and conversion matter, but different products can pursue those goals through different positioning and sales motions.",
       "",
       "OUTPUT FORMAT (STRICT):",
       "Return JSON with the schema already enforced by this app:",
@@ -1510,6 +1518,8 @@ export async function POST(request: NextRequest) {
       "- observation must state what the page communicates, what is missing, and why that matters for the user's decision",
       "- observation must not repeat the same claim twice",
       '- When partial explanation exists, do not use absolute critique phrases like "does not explain" or "no clarity"',
+      "- When the difference appears intentional, observation should explain the tradeoff instead of treating the pattern as a pure flaw",
+      "- Prefer tradeoff phrasing like: This is more X, while competitors emphasize Y, which makes Z",
       '- avoid "The page says..." phrasing unless quoting is necessary for evidence',
       "- observation must not restate the title or repeat the same extracted phrase without adding meaning",
       "- evidence: maximum 2 short bullet lines in one string, each line starting with '- '",
@@ -1524,10 +1534,14 @@ export async function POST(request: NextRequest) {
       "COMPARISON RULES:",
       "- If competitors are present, compare the target page against them directly",
       "- Every selected section must include one clear comparison sentence when competitor content is available",
+      "- Treat competitors as reference points for differences in wording, proof, friction, and positioning, not as automatic defaults",
       "- Prefer wording like: Compared to Linear, this page...",
       "- When competitor text is too thin, say Not enough information available to verify",
-      "- Prefer comparison statements like: Competitors use action-specific CTAs like 'Book demo' while the target page uses 'Get started'",
-      "- Name the competitors and describe one concrete difference in wording or proof",
+      "- Prefer comparison statements like: This page is more brand-led, while competitors emphasize immediate task outcomes, which makes the first impression broader but less concrete",
+      "- Name the competitors and describe one concrete difference in wording, next step, proof, or positioning",
+      "- Do not use blanket phrasing like 'weaker than competitors' when the better explanation is a strategic tradeoff",
+      "- For CTA, a short action like 'Try X' can support product-led, low-friction entry. Critique it only when the surrounding text still leaves the next step unclear",
+      "- For Social Proof, if explicit proof is thin but the page leans on authority, research, or reputation, describe that the page relies on brand authority rather than explicit proof",
       "- When the target page has strong scale or brand proof, compare the tradeoff instead of calling it simply weaker",
       "",
       "CONFIDENCE RULES:",
@@ -1540,10 +1554,12 @@ export async function POST(request: NextRequest) {
       "STYLE EXAMPLES:",
       'Bad: "The hero likely tries to communicate several ideas at once."',
       'Good: "The hero communicates several ideas at once and does not explain what changes for the user."',
+      'Bad: "This is weaker than competitors."',
+      'Good: "This is more brand-led, while competitors emphasize immediate task outcomes, which makes the offer feel broader on first read."',
       'Bad: "The CTA could be more specific."',
-      `Good: "The CTA "${pageContent.ctas[0] || "Get started"}" is generic and does not explain the next step or outcome."`,
+      `Good: "The CTA "${pageContent.ctas[0] || "Get started"}" keeps entry friction low, while competitors explain the first step more explicitly."`,
       'Bad: "Social proof is not decision-grade."',
-      'Good: "Social proof is not strong enough to drive trust quickly."',
+      'Good: "The page relies on brand authority rather than explicit customer proof, so trust comes more from reputation than named validation."',
       'Bad recommendation: "Improve CTA clarity."',
       `Good recommendation: "Replace "${pageContent.ctas[0] || "Get started"}" with an outcome-driven action that tells the user what happens next."`,
       "",
@@ -1551,6 +1567,8 @@ export async function POST(request: NextRequest) {
       '- No hedge words: likely, may, might, probably, suggests',
       '- Every section must explain what the user fails to understand, trust, or decide',
       '- No generic UX phrases',
+      "- Do not treat competitor patterns as automatic defaults",
+      "- If a difference appears intentional, explain the tradeoff",
       "- No repetition between title and observation",
       "- No broken or partial strings",
       "- No numbering artifacts such as 7. or 1.",
@@ -1593,7 +1611,7 @@ export async function POST(request: NextRequest) {
             {
               role: "system",
               content:
-                'Generate a concise, structured JSON UX audit for a SaaS landing page. Write like a senior UX strategist. Be direct, calm, specific, and concise. Keep every field under 2 short sentences. Do not use tools. Do not mention that you are an AI model. Use only the extracted content provided, especially the headline, CTA labels, trust text, title, and description when available. Do not invent missing copy, headings, buttons, trust signals, or unseen page elements. Only analyze the selected sections. Compare the target page against competitors directly and call out where the target is stronger or weaker. If the target page shows strong brand signals, high-scale proof, or widely recognized positioning, describe tradeoffs instead of treating those patterns as automatic weaknesses. Before critiquing the Hero section, review all available hero content together, including title, H1, H2 or supporting lines, headings, and description. Use all available hero-related text to determine what the page communicates, not just the H1. If supporting lines clarify what the product does or what category it belongs to, include that context in the analysis. If partial explanation exists, do not use absolute critique phrasing like "does not explain" or "no clarity"; prefer wording like "communicates X, but lacks Y". Every insight must answer what the user fails to understand, trust, or decide. Section titles must be short judgment labels, and observations must expand those labels instead of repeating them. Avoid hedging words such as likely, may, might, probably, suggests, typically, and common pattern. Avoid generic UX phrases such as value proposition, clarity, engagement, optimize, decision-grade, persuasive force, and builds confidence. Every sentence must be complete. Do not return broken fragments, numbering artifacts, trailing ellipses, or incomplete comparison clauses. If evidence is missing, say "Not enough information available to verify".'
+                'Generate a concise, structured JSON UX audit for a SaaS landing page. Write like a senior UX strategist. Be direct, calm, specific, and concise. Keep every field under 2 short sentences. Do not use tools. Do not mention that you are an AI model. Use only the extracted content provided, especially the headline, CTA labels, trust text, title, and description when available. Do not invent missing copy, headings, buttons, trust signals, or unseen page elements. Only analyze the selected sections. Compare the target page against competitors directly, but do not assume competitor patterns are always better. Explain differences in emphasis, proof, friction, and positioning. When a difference appears intentional or strategy-led, frame it as a tradeoff rather than a flaw. If the target page shows strong brand signals, high-scale proof, or widely recognized positioning, describe tradeoffs instead of treating those patterns as automatic weaknesses. Before critiquing the Hero section, review all available hero content together, including title, H1, H2 or supporting lines, headings, and description. Use all available hero-related text to determine what the page communicates, not just the H1. If supporting lines clarify what the product does or what category it belongs to, include that context in the analysis. If partial explanation exists, do not use absolute critique phrasing like "does not explain" or "no clarity"; prefer wording like "communicates X, but lacks Y". Do not treat a short CTA such as "Try X" as automatically unclear if it supports product-led, low-friction entry. If social proof is light but the page leans on brand authority, research positioning, technical expertise, or reputation, describe that pattern as reliance on brand authority rather than explicit proof. Every insight must answer what the user fails to understand, trust, or decide. Section titles must be short judgment labels, and observations must expand those labels instead of repeating them. Avoid hedging words such as likely, may, might, probably, suggests, typically, and common pattern. Avoid generic UX phrases such as value proposition, clarity, engagement, optimize, decision-grade, persuasive force, and builds confidence. Every sentence must be complete. Do not return broken fragments, numbering artifacts, trailing ellipses, or incomplete comparison clauses. If evidence is missing, say "Not enough information available to verify".'
             },
             {
               role: "user",
