@@ -1,5 +1,6 @@
 import {
   ChevronRight,
+  CircleHelp,
   LayoutTemplate,
   MousePointerClick,
   ShieldCheck,
@@ -21,11 +22,26 @@ const sectionIconByKey: Record<SectionAnalysis["key"], LucideIcon> = {
   "Social Proof": ShieldCheck
 };
 
+function getObservationHelpText(section: SectionAnalysis) {
+  if (section.sourceTone === "visual") {
+    return "Text-grounded V1 could not verify this section from extracted copy alone. If the read feels cautious, the page likely relies on visual rendering or layout cues that V2 will ground with screenshots.";
+  }
+
+  if (section.sourceTone === "partial") {
+    return "This section used partial text extraction. If the answer feels thin, stronger content rendering and screenshot grounding are planned for V2.";
+  }
+
+  return null;
+}
+
 export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
   return (
     <div className="accordion">
       {sections.map((section, index) => {
         const SectionIcon = sectionIconByKey[section.key];
+        const observationHelpText = section.sourceHelpText
+          ? null
+          : getObservationHelpText(section);
 
         return (
           <details
@@ -37,10 +53,26 @@ export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
               <div className="analysis-card-summary-copy">
                 <div className="analysis-card-meta-row">
                   <span className="section-key-badge">{section.key}</span>
-                  <span
-                    className={`analysis-source-badge analysis-source-badge-${section.sourceTone}`}
-                  >
-                    {section.sourceLabel}
+                  <span className="analysis-source-meta">
+                    <span
+                      className={`analysis-source-badge analysis-source-badge-${section.sourceTone}`}
+                    >
+                      {section.sourceLabel}
+                    </span>
+                    {section.sourceHelpText ? (
+                      <span
+                        className="analysis-source-help"
+                        data-tooltip={section.sourceHelpText}
+                        aria-label={section.sourceHelpText}
+                        tabIndex={0}
+                      >
+                        <CircleHelp
+                          className="analysis-source-help-icon"
+                          strokeWidth={1.6}
+                          aria-hidden="true"
+                        />
+                      </span>
+                    ) : null}
                   </span>
                 </div>
                 <div className="analysis-card-title-row">
@@ -67,7 +99,23 @@ export function AnalysisAccordion({ sections }: AnalysisAccordionProps) {
 
               <div className="analysis-content">
                 <div className="content-block">
-                  <span className="content-label">Observation</span>
+                  <div className="content-label-row">
+                    <span className="content-label">Observation</span>
+                    {observationHelpText ? (
+                      <span
+                        className="analysis-source-help content-label-help"
+                        data-tooltip={observationHelpText}
+                        aria-label={observationHelpText}
+                        tabIndex={0}
+                      >
+                        <CircleHelp
+                          className="analysis-source-help-icon"
+                          strokeWidth={1.6}
+                          aria-hidden="true"
+                        />
+                      </span>
+                    ) : null}
+                  </div>
                   <p>
                     {renderEmphasizedText(section.observation, {
                       maxPerLine: 1,

@@ -17,7 +17,7 @@ import type {
   AnalyzeRequestPayload
 } from "@/lib/types";
 
-const ANALYZE_TIMEOUT_MS = 30000;
+const ANALYZE_TIMEOUT_MS = 45000;
 
 const validSectionKeys = new Set<AnalysisSectionKey>([
   "Hero",

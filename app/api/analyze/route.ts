@@ -16,9 +16,9 @@ const FIRECRAWL_SCRAPE_URL =
   process.env.FIRECRAWL_API_URL ?? "https://api.firecrawl.dev/v2/scrape";
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-5.4-mini";
 const VALID_SECTIONS = ["Hero", "CTA", "Social Proof"] as const;
-const PAGE_FETCH_TIMEOUT_MS = 10000;
+const PAGE_FETCH_TIMEOUT_MS = 15000;
 const FIRECRAWL_RENDER_WAIT_MS = 3500;
-const OPENAI_REQUEST_TIMEOUT_MS = 20000;
+const OPENAI_REQUEST_TIMEOUT_MS = 30000;
 const OPENAI_MAX_ATTEMPTS = 2;
 const OPENAI_RETRY_DELAY_MS = 500;
 const HTML_PREVIEW_CHAR_LIMIT = 2500000;
@@ -46,6 +46,7 @@ type ExtractedPageContent = {
   title: string;
   headline: string;
   headlineSource: "h1" | "hero-fallback" | "meta-description" | "title" | "none";
+  heroEvidenceStatus: "clear" | "suspicious" | "missing";
   headings: string[];
   ctas: string[];
   description: string;
@@ -185,7 +186,7 @@ function buildResponseSchema(selectedSections: ValidSection[]) {
           },
           keyGaps: {
             type: "array",
-            minItems: 2,
+            minItems: 1,
             maxItems: 3,
             items: {
               type: "string"
@@ -193,7 +194,7 @@ function buildResponseSchema(selectedSections: ValidSection[]) {
           },
           topActions: {
             type: "array",
-            minItems: 2,
+            minItems: 1,
             maxItems: 3,
             items: {
               type: "string"
@@ -661,6 +662,7 @@ function truncatePageContentForPrompt(
     title,
     headline,
     headlineSource: content.headlineSource,
+    heroEvidenceStatus: content.heroEvidenceStatus,
     headings: headings.filter(Boolean),
     ctas: truncateTextGroupForPrompt(content.ctas, PROMPT_FIELD_CHAR_LIMIT).filter(
       Boolean
@@ -1205,6 +1207,12 @@ function scoreCtaCandidate(
 }
 
 function extractCallToActionsFromHtml(html: string) {
+  const roleButtonMatches = html.matchAll(
+    /<([a-z0-9:-]+)\b[^>]*\brole=(["'])button\2[^>]*>([\s\S]*?)<\/\1>/gi
+  );
+  const inputButtonMatches = html.matchAll(
+    /<input\b[^>]*\btype=(["'])(?:submit|button)\1[^>]*\bvalue=(["'])([\s\S]*?)\2[^>]*>/gi
+  );
   const candidates = [
     ...extractTagText(html, "button", 80).map((value) => ({
       value,
@@ -1217,6 +1225,14 @@ function extractCallToActionsFromHtml(html: string) {
     ...extractAttributeValues(html, "aria-label", 80).map((value) => ({
       value,
       source: "attribute" as const
+    })),
+    ...Array.from(roleButtonMatches, (match) => ({
+      value: match[3] ?? "",
+      source: "button" as const
+    })),
+    ...Array.from(inputButtonMatches, (match) => ({
+      value: match[3] ?? "",
+      source: "button" as const
     })),
     ...extractCtaSnippets(html).map((value) => ({
       value,
@@ -1364,9 +1380,70 @@ function isLikelyDecorativeTitleText(value: string) {
   );
 }
 
+function isLikelyJobTitleText(value: string) {
+  const normalized = sanitizeExtractedText(value);
+
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    /\b(?:sr\.?|senior|jr\.?|manager|director|head|lead|chief|principal|vp|vice president)\b/i.test(
+      normalized
+    ) &&
+    /\b(?:of|for|at)\b/i.test(normalized) &&
+    normalized.split(/\s+/).length <= 10
+  );
+}
+
+function isLikelyEmbeddedMediaText(value: string) {
+  const normalized = sanitizeExtractedText(value);
+
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(?:vimeo|youtube|gallery scroll|watch now|play video|thumbnail)\b/i.test(
+    normalized
+  );
+}
+
+function isLikelyMetricWidgetLabelText(value: string) {
+  const normalized = sanitizeExtractedText(value);
+  const words = normalized.split(/\s+/).filter(Boolean);
+
+  if (!normalized || words.length === 0 || words.length > 4) {
+    return false;
+  }
+
+  return /\b(?:live|active|total|new|monthly|daily|weekly)?\s*(?:visitors|visitor|traffic|views|sessions|signups?|users|leads|clicks|revenue|sales|orders|conversions?)\b/i.test(
+    normalized
+  );
+}
+
+function isSuspiciousHeroText(value: string) {
+  const normalized = sanitizeExtractedText(value);
+
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    isLikelyDecorativeTitleText(normalized) ||
+    isLikelyEmbeddedMediaText(normalized) ||
+    isLikelyMetricWidgetLabelText(normalized) ||
+    isLikelyJobTitleText(normalized) ||
+    /\b(?:testimonial|customer story|case study)\b/i.test(normalized)
+  );
+}
+
 function isBrokenHeroHeadline(value: string) {
   if (!value) {
     return false;
+  }
+
+  if (isSuspiciousHeroText(value)) {
+    return true;
   }
 
   const words = value.toLowerCase().split(/\s+/).filter(Boolean);
@@ -1413,7 +1490,7 @@ function getHeroFallbackHeadline(
     };
   }
 
-  if (title) {
+  if (title && !isSuspiciousHeroText(title)) {
     return {
       text: title,
       source: "title" as const
@@ -1424,6 +1501,35 @@ function getHeroFallbackHeadline(
     text: "",
     source: "none" as const
   };
+}
+
+function getHeroEvidenceStatus(
+  headline: string,
+  headlineSource: ExtractedPageContent["headlineSource"],
+  description: string,
+  title: string
+): ExtractedPageContent["heroEvidenceStatus"] {
+  if (headline) {
+    if (isSuspiciousHeroText(headline)) {
+      return "suspicious";
+    }
+
+    if (headlineSource === "title" && headline.split(/\s+/).length <= 2) {
+      return "suspicious";
+    }
+
+    return "clear";
+  }
+
+  if (description) {
+    return isSuspiciousHeroText(description) ? "suspicious" : "clear";
+  }
+
+  if (title) {
+    return "suspicious";
+  }
+
+  return "missing";
 }
 
 function extractPageContentFromHtml(
@@ -1466,11 +1572,18 @@ function extractPageContentFromHtml(
         ? "h1"
         : "hero-fallback";
   const heroHeadings = useFallbackHeadline ? h2Text : [...h1Text, ...h2Text];
+  const heroEvidenceStatus = getHeroEvidenceStatus(
+    headline,
+    headlineSource,
+    description,
+    title
+  );
 
   return {
     title,
     headline,
     headlineSource,
+    heroEvidenceStatus,
     headings: dedupeNonEmpty(heroHeadings),
     ctas,
     description,
@@ -1621,6 +1734,7 @@ function createEmptyPageContent(): ExtractedPageContent {
     title: "",
     headline: "",
     headlineSource: "none",
+    heroEvidenceStatus: "missing",
     headings: [],
     ctas: [],
     description: "",
@@ -1839,14 +1953,21 @@ function getExtractedEvidenceFallback(
   pageContent: ExtractedPageContent
 ): string | null {
   if (sectionName === "Hero") {
+    if (pageContent.heroEvidenceStatus !== "clear") {
+      return null;
+    }
+
     const lines = [
-      pageContent.title ? `- Title: ${quoteForEvidence(pageContent.title)}.` : "",
+      pageContent.title && !isSuspiciousHeroText(pageContent.title)
+        ? `- Title: ${quoteForEvidence(pageContent.title)}.`
+        : "",
       pageContent.headline
         ? `- Headline: ${quoteForEvidence(pageContent.headline)}.`
         : "",
       pageContent.description &&
       pageContent.description !== pageContent.headline &&
-      pageContent.description !== pageContent.title
+      pageContent.description !== pageContent.title &&
+      !isSuspiciousHeroText(pageContent.description)
         ? `- Description: ${quoteForEvidence(pageContent.description)}.`
         : ""
     ].filter(Boolean);
@@ -2010,13 +2131,38 @@ function appendManualCheckGuidance(
 }
 
 function hasExplicitComparisonSentence(value: string) {
-  return /\bCompared to\b/i.test(value);
+  return (
+    /\bCompared to\b/i.test(value) &&
+    !/\bCompared to (?:a|an) competitor\b/i.test(value) &&
+    !/\bCompared to competitors?\b/i.test(value)
+  );
+}
+
+function hasCompetitorSectionEvidence(
+  sectionName: AnalysisSectionKey,
+  content: ExtractedPageContent
+) {
+  switch (sectionName) {
+    case "Hero":
+      return (
+        content.heroEvidenceStatus === "clear" &&
+        Boolean(content.headline || content.description)
+      );
+    case "CTA":
+      return content.ctas.length > 0;
+    case "Social Proof":
+      return content.trustSignals.length > 0;
+  }
 }
 
 function getComparisonCompetitorNames(
+  sectionName: AnalysisSectionKey,
   competitorContent: ExtractedCompetitorContent[]
 ) {
   return competitorContent
+    .filter((competitor) =>
+      hasCompetitorSectionEvidence(sectionName, competitor.content)
+    )
     .slice(0, 3)
     .map((competitor, index) => getCompetitorName(competitor, index));
 }
@@ -2027,7 +2173,10 @@ function buildFallbackComparisonSentence(
   targetBrandName: string,
   coverage: EvidenceCoverage
 ) {
-  const competitorNames = getComparisonCompetitorNames(competitorContent);
+  const competitorNames = getComparisonCompetitorNames(
+    sectionName,
+    competitorContent
+  );
 
   if (competitorNames.length === 0) {
     return "";
@@ -2051,6 +2200,42 @@ function buildFallbackComparisonSentence(
   }
 }
 
+function removeUnavailableComparisonLeadIn(value: string) {
+  return value
+    .replace(
+      /^(?:Compared (?:to|with)|Unlike|Whereas|Versus|In contrast to|While competitors?)[^,]+,\s*/i,
+      ""
+    )
+    .trim();
+}
+
+function removeObservationComparisonWithoutCompetitors(value: string) {
+  const normalizedValue = removeUnavailableComparisonLeadIn(value);
+  const keptSentences = splitIntoSentences(normalizedValue).filter(
+    (sentence) =>
+      !COMPARISON_SENTENCE_PREFIX_PATTERN.test(sentence) &&
+      !/\bcompetitor(?:s)?\b/i.test(sentence)
+  );
+
+  if (keptSentences.length > 0) {
+    return keptSentences
+      .slice(0, 2)
+      .map((sentence) =>
+        /[.!?]$/.test(sentence) ? sentence : `${sentence}.`
+      )
+      .join(" ");
+  }
+
+  const strippedValue = sanitizeObservation(
+    normalizedValue
+      .replace(/\bcompetitor(?:s)?\b/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
+
+  return strippedValue || MISSING_INFORMATION_TEXT;
+}
+
 function ensureObservationComparison(
   observation: string,
   sectionName: AnalysisSectionKey,
@@ -2058,8 +2243,15 @@ function ensureObservationComparison(
   targetBrandName: string,
   coverage: EvidenceCoverage
 ) {
+  const comparableCompetitorContent = competitorContent.filter((competitor) =>
+    hasCompetitorSectionEvidence(sectionName, competitor.content)
+  );
+
+  if (comparableCompetitorContent.length === 0) {
+    return removeObservationComparisonWithoutCompetitors(observation);
+  }
+
   if (
-    competitorContent.length === 0 ||
     hasExplicitComparisonSentence(observation) ||
     observation === MISSING_INFORMATION_TEXT
   ) {
@@ -2068,7 +2260,7 @@ function ensureObservationComparison(
 
   const comparisonSentence = buildFallbackComparisonSentence(
     sectionName,
-    competitorContent,
+    comparableCompetitorContent,
     targetBrandName,
     coverage
   );

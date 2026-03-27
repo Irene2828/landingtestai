@@ -73,7 +73,7 @@ export function CompetitorTags({
           </div>
 
           <button
-            className="inline-action"
+            className="inline-action competitor-add-button"
             type="button"
             onClick={onAddCompetitor}
           >

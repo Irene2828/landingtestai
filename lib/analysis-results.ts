@@ -45,26 +45,34 @@ function extractSectionSummary(observation: string) {
 }
 
 function getSectionSourceMeta(
+  sectionName: AnalysisSectionKey,
   evidence: string,
   confidenceLevel: "HIGH" | "LOW"
 ) {
   if (evidence.trim() === TEXT_ONLY_V1_EVIDENCE_FALLBACK) {
     return {
       sourceLabel: "Visual check recommended",
-      sourceTone: "visual" as const
+      sourceTone: "visual" as const,
+      sourceHelpText:
+        sectionName === "Hero"
+          ? "V1 is text-grounded. If the extracted hero line looks unreliable, such as a testimonial role, video title, or other non-hero text, the app falls back to a manual visual check instead of pretending certainty. V2 adds screenshot grounding."
+          : "V1 is text-grounded. When the app cannot verify this section from extracted copy alone, it falls back to manual visual checks instead of guessing. V2 adds screenshot-based grounding for these cases."
     };
   }
 
   if (confidenceLevel === "LOW") {
     return {
       sourceLabel: "Partial text extraction",
-      sourceTone: "partial" as const
+      sourceTone: "partial" as const,
+      sourceHelpText:
+        "Some text was extracted, but not enough stable target-page evidence was available for a fully grounded read. The section stays LOW confidence on purpose."
     };
   }
 
   return {
     sourceLabel: "Text extracted",
-    sourceTone: "text" as const
+    sourceTone: "text" as const,
+    sourceHelpText: undefined
   };
 }
 
@@ -77,6 +85,7 @@ export function mapAnalysisResponseToResults(
     topActions: response.summary.topActions,
     sections: response.sections.map((section) => {
       const sourceMeta = getSectionSourceMeta(
+        section.name,
         section.evidence,
         section.confidence.level
       );
@@ -88,6 +97,7 @@ export function mapAnalysisResponseToResults(
         screenshotLabel: sectionMeta[section.name].screenshotLabel,
         sourceLabel: sourceMeta.sourceLabel,
         sourceTone: sourceMeta.sourceTone,
+        sourceHelpText: sourceMeta.sourceHelpText,
         observation: section.observation,
         evidence: section.evidence,
         recommendation: section.recommendation,

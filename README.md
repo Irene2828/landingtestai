@@ -96,9 +96,9 @@ http://localhost:3000
 ```
 
 ## Important Implementation Notes
-- Analysis happens in [`app/api/analyze/route.ts`](/Users/irynaherz/Landing%20AI%20Helper/app/api/analyze/route.ts)
-- Competitor suggestion logic lives in [`lib/mock-setup.ts`](/Users/irynaherz/Landing%20AI%20Helper/lib/mock-setup.ts)
-- Service-business detection lives in [`lib/business-type.ts`](/Users/irynaherz/Landing%20AI%20Helper/lib/business-type.ts)
+- Analysis happens in [`app/api/analyze/route.ts`](app/api/analyze/route.ts)
+- Competitor suggestion logic lives in [`lib/mock-setup.ts`](lib/mock-setup.ts)
+- Service-business detection lives in [`lib/business-type.ts`](lib/business-type.ts)
 
 ## Product Framing
 This repository reflects a deliberate V1 decision:
@@ -122,4 +122,4 @@ That means:
 ## Security Notes
 - No API keys are exposed in client-side code
 - No `NEXT_PUBLIC_` secrets are used in this project
-- OpenAI and Firecrawl credentials are read only on the server in [`app/api/analyze/route.ts`](/Users/irynaherz/Landing%20AI%20Helper/app/api/analyze/route.ts)
+- OpenAI and Firecrawl credentials are read only on the server in [`app/api/analyze/route.ts`](app/api/analyze/route.ts)

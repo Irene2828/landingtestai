@@ -26,7 +26,7 @@ const cards = [
   },
   {
     key: "gaps",
-    title: "Where It Breaks",
+    title: "Where It Feels Less Clear",
     className: "summary-card-gaps"
   },
   {

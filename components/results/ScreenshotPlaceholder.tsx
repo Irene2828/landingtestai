@@ -6,11 +6,11 @@ type ScreenshotPlaceholderProps = {
 function getPlaceholderNote(sourceTone: ScreenshotPlaceholderProps["sourceTone"]) {
   switch (sourceTone) {
     case "text":
-      return "Text evidence grounded";
+      return "Visual proof slot coming in V2";
     case "partial":
-      return "Text + manual check";
+      return "Text-led read. Visual proof in V2";
     case "visual":
-      return "Visual check recommended";
+      return "Manual visual check until V2";
   }
 }
 

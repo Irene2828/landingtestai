@@ -126,7 +126,11 @@ export function AnalysisSetupForm() {
 
     if (nextSuggestionKey !== lastSuggestionKeyRef.current) {
       lastSuggestionKeyRef.current = nextSuggestionKey;
-      hasManualCompetitorEditsRef.current = false;
+
+      if (hasManualCompetitorEditsRef.current) {
+        return;
+      }
+
       setCompetitors(nextSuggestions);
       return;
     }
@@ -239,6 +243,36 @@ export function AnalysisSetupForm() {
       return;
     }
 
+    let effectiveCompetitors = hasManualCompetitorEditsRef.current
+      ? competitors
+      : getSuggestedCompetitorsForUrl(normalizedUrl);
+
+    const normalizedCompetitorUrl = normalizeUrlInput(competitorInput);
+
+    if (normalizedCompetitorUrl) {
+      if (!isValidNormalizedUrl(normalizedCompetitorUrl)) {
+        setCompetitorError(COMPETITOR_ERROR_MESSAGE);
+        return;
+      }
+
+      if (normalizedCompetitorUrl.toLowerCase() === normalizedUrl.toLowerCase()) {
+        setCompetitorError("Target page and competitor cannot be the same URL");
+        return;
+      }
+
+      const competitorExists = effectiveCompetitors.some(
+        (competitor) =>
+          competitor.url.toLowerCase() === normalizedCompetitorUrl.toLowerCase()
+      );
+
+      if (!competitorExists) {
+        effectiveCompetitors = [
+          ...effectiveCompetitors,
+          buildCustomCompetitor(normalizedCompetitorUrl)
+        ];
+      }
+    }
+
     const searchParams = new URLSearchParams({
       url: normalizedUrl
     });
@@ -247,7 +281,7 @@ export function AnalysisSetupForm() {
       searchParams.append("section", section);
     });
 
-    competitors.forEach((competitor) => {
+    effectiveCompetitors.forEach((competitor) => {
       searchParams.append("competitorUrl", competitor.url);
     });
 

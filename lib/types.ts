@@ -52,6 +52,7 @@ export type SectionAnalysis = {
   screenshotLabel: string;
   sourceLabel: string;
   sourceTone: "text" | "partial" | "visual";
+  sourceHelpText?: string;
   observation: string;
   evidence: string;
   recommendation: string;
