@@ -5,8 +5,24 @@ import { AnalysisProvider } from "@/components/providers/AnalysisProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Competitive Landing Page Analyzer",
-  description: "Mock results UI for a landing page analysis MVP."
+  metadataBase: new URL("https://landingtestai.vercel.app"),
+  title: "AI Landing Page Analyzer",
+  description:
+    "Compare Hero, CTA, and Social Proof against competitors with evidence-backed UX recommendations and confidence levels.",
+  openGraph: {
+    title: "AI Landing Page Analyzer",
+    description:
+      "Compare Hero, CTA, and Social Proof against competitors with evidence-backed UX recommendations and confidence levels.",
+    url: "https://landingtestai.vercel.app",
+    siteName: "AI Landing Page Analyzer",
+    type: "website"
+  },
+  twitter: {
+    card: "summary",
+    title: "AI Landing Page Analyzer",
+    description:
+      "Compare Hero, CTA, and Social Proof against competitors with evidence-backed UX recommendations and confidence levels."
+  }
 };
 
 type RootLayoutProps = {
