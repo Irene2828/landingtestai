@@ -2009,6 +2009,83 @@ function appendManualCheckGuidance(
   ].join("\n");
 }
 
+function hasExplicitComparisonSentence(value: string) {
+  return /\bCompared to\b/i.test(value);
+}
+
+function getComparisonCompetitorNames(
+  competitorContent: ExtractedCompetitorContent[]
+) {
+  return competitorContent
+    .slice(0, 3)
+    .map((competitor, index) => getCompetitorName(competitor, index));
+}
+
+function buildFallbackComparisonSentence(
+  sectionName: AnalysisSectionKey,
+  competitorContent: ExtractedCompetitorContent[],
+  targetBrandName: string,
+  coverage: EvidenceCoverage
+) {
+  const competitorNames = getComparisonCompetitorNames(competitorContent);
+
+  if (competitorNames.length === 0) {
+    return "";
+  }
+
+  const competitorList = formatReadableList(competitorNames);
+
+  switch (sectionName) {
+    case "Hero":
+      return coverage === "missing"
+        ? `Compared to ${competitorList}, review whether ${targetBrandName} makes the first-screen outcome as immediate as the competitor benchmark.`
+        : `Compared to ${competitorList}, ${targetBrandName} uses broader first-screen framing, which makes the outcome feel less immediate.`;
+    case "CTA":
+      return coverage === "missing"
+        ? `Compared to ${competitorList}, review whether ${targetBrandName}'s lead CTA is as visually clear and singular as the competitor benchmark.`
+        : `Compared to ${competitorList}, ${targetBrandName} makes the entry path feel less singular on first read.`;
+    case "Social Proof":
+      return coverage === "missing"
+        ? `Compared to ${competitorList}, review whether ${targetBrandName} surfaces trust proof as prominently near the hero or CTA.`
+        : `Compared to ${competitorList}, ${targetBrandName} relies on broader authority cues, which makes the proof feel less specific.`;
+  }
+}
+
+function ensureObservationComparison(
+  observation: string,
+  sectionName: AnalysisSectionKey,
+  competitorContent: ExtractedCompetitorContent[],
+  targetBrandName: string,
+  coverage: EvidenceCoverage
+) {
+  if (
+    competitorContent.length === 0 ||
+    hasExplicitComparisonSentence(observation) ||
+    observation === MISSING_INFORMATION_TEXT
+  ) {
+    return observation;
+  }
+
+  const comparisonSentence = buildFallbackComparisonSentence(
+    sectionName,
+    competitorContent,
+    targetBrandName,
+    coverage
+  );
+
+  if (!comparisonSentence) {
+    return observation;
+  }
+
+  const sentences = splitIntoSentences(observation);
+
+  if (sentences.length === 0) {
+    return comparisonSentence;
+  }
+
+  return [sentences[0], comparisonSentence].join(" ");
+}
+
 function dedupeSummaryItems(values: string[], maxItems = 3) {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -2268,10 +2345,12 @@ function normalizeConfidenceForEvidence(
 function sanitizeAnalyzeResponse(
   response: AnalyzeApiResponse,
   pageContent: ExtractedPageContent,
-  competitorContent: ExtractedCompetitorContent[]
+  competitorContent: ExtractedCompetitorContent[],
+  pageUrl: string
 ): AnalyzeApiResponse {
   const coverageBySection: Partial<Record<AnalysisSectionKey, EvidenceCoverage>> =
     {};
+  const targetBrandName = getBrandNameFromUrl(pageUrl, "This page");
   const sections = response.sections.map((section) => {
     let { text: evidence, coverage } = sanitizeEvidenceBlock(section.evidence);
     let confidenceInput = section.confidence;
@@ -2299,10 +2378,16 @@ function sanitizeAnalyzeResponse(
 
     coverageBySection[section.name] = coverage;
 
-    const observation = normalizeObservationForEvidence(
-      sanitizeObservation(section.observation),
-      coverage,
-      section.name
+    const observation = ensureObservationComparison(
+      normalizeObservationForEvidence(
+        sanitizeObservation(section.observation),
+        coverage,
+        section.name
+      ),
+      section.name,
+      competitorContent,
+      targetBrandName,
+      coverage
     );
     const confidence = normalizeConfidenceForEvidence(
       confidenceInput.level,
@@ -2784,7 +2869,7 @@ export async function POST(request: NextRequest) {
     }
 
     return createAnalysisJsonResponse(
-      sanitizeAnalyzeResponse(parsed, pageContent, competitorContent)
+      sanitizeAnalyzeResponse(parsed, pageContent, competitorContent, url)
     );
   } catch (error) {
     console.error("Analyze error:", error);
