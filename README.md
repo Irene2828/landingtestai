@@ -57,7 +57,8 @@ It is intentionally conservative on pages where those signals are mostly visual.
 3. The app extracts target and competitor page content.
 4. A server-side analysis route builds a grounded prompt.
 5. OpenAI returns structured section analysis under a strict JSON schema.
-6. The server sanitizes the response and enforces evidence + confidence rules before returning results.
+6. The server sanitizes the response and assigns confidence based on how well the target page was actually verified.
+7. Low-evidence sections fall back to manual visual checks instead of guessed analysis.
 
 ## Local Setup
 
