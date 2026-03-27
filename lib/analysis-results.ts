@@ -1,6 +1,9 @@
 import { splitSentencesPreservingDomains } from "./sentence-utils";
 import type { AnalyzeApiResponse, AnalysisSectionKey, ResultsData } from "./types";
 
+const TEXT_ONLY_V1_EVIDENCE_FALLBACK =
+  "Not captured by text extraction. Visual analysis (screenshots, logo detection, button positioning) coming in V2.";
+
 const sectionMeta: Record<
   AnalysisSectionKey,
   { title: string; screenshotLabel: string }
@@ -41,6 +44,30 @@ function extractSectionSummary(observation: string) {
   return sentences[0];
 }
 
+function getSectionSourceMeta(
+  evidence: string,
+  confidenceLevel: "HIGH" | "LOW"
+) {
+  if (evidence.trim() === TEXT_ONLY_V1_EVIDENCE_FALLBACK) {
+    return {
+      sourceLabel: "Visual check recommended",
+      sourceTone: "visual" as const
+    };
+  }
+
+  if (confidenceLevel === "LOW") {
+    return {
+      sourceLabel: "Partial text extraction",
+      sourceTone: "partial" as const
+    };
+  }
+
+  return {
+    sourceLabel: "Text extracted",
+    sourceTone: "text" as const
+  };
+}
+
 export function mapAnalysisResponseToResults(
   response: AnalyzeApiResponse
 ): ResultsData {
@@ -48,15 +75,24 @@ export function mapAnalysisResponseToResults(
     keyStrengths: response.summary.keyStrengths,
     keyGaps: response.summary.keyGaps,
     topActions: response.summary.topActions,
-    sections: response.sections.map((section) => ({
-      key: section.name,
-      title: section.title || sectionMeta[section.name].title,
-      summary: extractSectionSummary(section.observation),
-      screenshotLabel: sectionMeta[section.name].screenshotLabel,
-      observation: section.observation,
-      evidence: section.evidence,
-      recommendation: section.recommendation,
-      confidence: section.confidence
-    }))
+    sections: response.sections.map((section) => {
+      const sourceMeta = getSectionSourceMeta(
+        section.evidence,
+        section.confidence.level
+      );
+
+      return {
+        key: section.name,
+        title: section.title || sectionMeta[section.name].title,
+        summary: extractSectionSummary(section.observation),
+        screenshotLabel: sectionMeta[section.name].screenshotLabel,
+        sourceLabel: sourceMeta.sourceLabel,
+        sourceTone: sourceMeta.sourceTone,
+        observation: section.observation,
+        evidence: section.evidence,
+        recommendation: section.recommendation,
+        confidence: section.confidence
+      };
+    })
   };
 }

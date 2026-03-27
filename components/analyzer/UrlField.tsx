@@ -1,3 +1,5 @@
+import { Link2 } from "lucide-react";
+
 type UrlFieldProps = {
   value: string;
   onChange: (value: string) => void;
@@ -19,9 +21,7 @@ export function UrlField({ value, onChange, onBlur, error }: UrlFieldProps) {
       </label>
 
       <div className={`input-shell${error ? " input-shell-error" : ""}`}>
-        <span className="input-icon material-symbols-outlined" aria-hidden="true">
-          link
-        </span>
+        <Link2 className="input-icon" strokeWidth={1.7} aria-hidden="true" />
         <input
           id="url-input"
           className="setup-input"
@@ -38,7 +38,7 @@ export function UrlField({ value, onChange, onBlur, error }: UrlFieldProps) {
           aria-describedby={describedBy}
         />
       </div>
-      <p id="url-input-help" className="setup-hint">
+      <p id="url-input-help" className="setup-hint setup-hint-centered">
         {URL_HELP_TEXT}
       </p>
       {error ? (

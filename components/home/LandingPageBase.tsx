@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Info } from "lucide-react";
 
 import { AnalysisSetupForm } from "@/components/analyzer/AnalysisSetupForm";
 import { HowItWorksModal } from "@/components/home/HowItWorksModal";
@@ -38,12 +39,11 @@ export function LandingPageBase({ tagline }: LandingPageBaseProps) {
                     aria-label="How it works"
                     onClick={() => setIsOpen(true)}
                   >
-                    <span
-                      className="material-symbols-outlined setup-help-trigger-icon"
+                    <Info
+                      className="setup-help-trigger-icon"
+                      strokeWidth={1.8}
                       aria-hidden="true"
-                    >
-                      info
-                    </span>
+                    />
                     <span className="setup-help-trigger-label">How it works</span>
                   </button>
                 </div>

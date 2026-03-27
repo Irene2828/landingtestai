@@ -63,7 +63,10 @@ export function ResultsSummary({
 
               return (
                 <li key={item}>
-                  {renderEmphasizedText(trimSummaryItem(item), { maxPerLine: 2 })}
+                  {renderEmphasizedText(trimSummaryItem(item), {
+                    maxPerLine: 2,
+                    mode: "summary"
+                  })}
                 </li>
               );
             })}

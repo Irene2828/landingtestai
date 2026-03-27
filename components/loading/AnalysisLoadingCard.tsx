@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Circle, LoaderCircle, Search } from "lucide-react";
 import Link from "next/link";
 import {
   type ReadonlyURLSearchParams,
@@ -16,7 +17,7 @@ import type {
   AnalyzeRequestPayload
 } from "@/lib/types";
 
-const ANALYZE_TIMEOUT_MS = 15000;
+const ANALYZE_TIMEOUT_MS = 30000;
 
 const validSectionKeys = new Set<AnalysisSectionKey>([
   "Hero",
@@ -46,11 +47,13 @@ function getRequestFromSearchParams(
       (value): value is AnalysisSectionKey =>
         validSectionKeys.has(value as AnalysisSectionKey)
     );
-  const competitorUrls = searchParams
-    .getAll("competitor")
-    .map((value) => competitorUrlById.get(value))
-    .filter((value): value is string => typeof value === "string")
-    .filter((value, index, values) => values.indexOf(value) === index);
+  const competitorUrls = [
+    ...searchParams.getAll("competitorUrl").map((value) => value.trim()),
+    ...searchParams
+      .getAll("competitor")
+      .map((value) => competitorUrlById.get(value))
+      .filter((value): value is string => typeof value === "string")
+  ].filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
 
   return {
     url,
@@ -89,14 +92,13 @@ function AnalysisLoadingCardView({
       <div className="loading-card-header">
         <div className="loading-icon-ring" aria-hidden="true">
           <div className="loading-icon-pulse" />
-          <span className="loading-icon-glyph material-symbols-outlined">
-            search_insights
-          </span>
+          <Search className="loading-icon-glyph" strokeWidth={1.5} />
         </div>
 
-        <h2 className="loading-card-title">Analyzing your landing page</h2>
+        <h2 className="loading-card-title">Grounding your landing page audit</h2>
         <p>
-          Reviewing structure, messaging, and competitive positioning.
+          Extracting hero copy, CTA language, and trust cues before generating
+          evidence-backed recommendations.
         </p>
       </div>
 
@@ -120,13 +122,17 @@ function AnalysisLoadingCardView({
             >
               <div className="loading-step-marker" aria-hidden="true">
                 {step.status === "complete" ? (
-                  <span className="loading-step-check material-symbols-outlined">
-                    check
-                  </span>
+                  <Check className="loading-step-icon" strokeWidth={1.5} />
                 ) : step.status === "active" ? (
-                  <span className="loading-step-spinner" />
+                  <LoaderCircle
+                    className="loading-step-icon loading-step-icon-active"
+                    strokeWidth={1.5}
+                  />
                 ) : (
-                  <span className="loading-step-dot" />
+                  <Circle
+                    className="loading-step-icon loading-step-icon-pending"
+                    strokeWidth={1.5}
+                  />
                 )}
               </div>
 
@@ -227,14 +233,12 @@ export function AnalysisLoadingCard() {
           analyzePromise = Promise.race([
             (async () => {
               try {
-                console.log("Calling analyze API");
-                console.log("Before fetch", requestPayload);
-
                 const response = await fetch("/api/analyze", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json"
                   },
+                  cache: "no-store",
                   body: JSON.stringify({
                     url: requestPayload.url,
                     sections: requestPayload.sections,
@@ -242,13 +246,9 @@ export function AnalysisLoadingCard() {
                   })
                 });
 
-                console.log("After fetch", response);
-
                 const responsePayload = (await response.json()) as
                   | AnalyzeApiResponse
                   | { error?: string; details?: string };
-
-                console.log("After parsing response", responsePayload);
 
                 if (!response.ok) {
                   throw new Error(getErrorMessage(responsePayload));
@@ -307,7 +307,6 @@ export function AnalysisLoadingCard() {
           },
           responsePayload
         );
-        console.log("Redirecting to results");
         router.replace("/results");
       } catch (caughtError) {
         if (!isActive) {

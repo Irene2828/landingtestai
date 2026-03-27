@@ -1,10 +1,14 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState
+} from "react";
 
 import type { AnalyzeApiResponse, AnalyzeRequestPayload } from "@/lib/types";
-
-const ANALYSIS_STORAGE_KEY = "landing-page-analysis";
 
 type AnalysisContextValue = {
   request: AnalyzeRequestPayload | null;
@@ -23,28 +27,26 @@ type AnalysisProviderProps = {
   children: React.ReactNode;
 };
 
-type PersistedAnalysis = {
-  request: AnalyzeRequestPayload;
-  result: AnalyzeApiResponse;
-};
+const ANALYSIS_SESSION_STORAGE_KEY = "landing-ai-analysis";
 
-function readPersistedAnalysis() {
-  if (typeof window === "undefined") {
-    return null;
+function isStoredAnalysisPayload(value: unknown): value is {
+  request: AnalyzeRequestPayload | null;
+  result: AnalyzeApiResponse | null;
+} {
+  if (!value || typeof value !== "object") {
+    return false;
   }
 
-  const rawValue = window.sessionStorage.getItem(ANALYSIS_STORAGE_KEY);
+  const candidate = value as {
+    request?: unknown;
+    result?: unknown;
+  };
 
-  if (!rawValue) {
-    return null;
+  if (!("request" in candidate) || !("result" in candidate)) {
+    return false;
   }
 
-  try {
-    return JSON.parse(rawValue) as PersistedAnalysis;
-  } catch {
-    window.sessionStorage.removeItem(ANALYSIS_STORAGE_KEY);
-    return null;
-  }
+  return true;
 }
 
 export function AnalysisProvider({ children }: AnalysisProviderProps) {
@@ -52,43 +54,65 @@ export function AnalysisProvider({ children }: AnalysisProviderProps) {
   const [result, setResult] = useState<AnalyzeApiResponse | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  useEffect(() => {
-    const persistedAnalysis = readPersistedAnalysis();
-
-    if (persistedAnalysis) {
-      setRequest(persistedAnalysis.request);
-      setResult(persistedAnalysis.result);
-    }
-
-    setIsHydrated(true);
-  }, []);
-
   const handleSetAnalysis = useCallback((
     nextRequest: AnalyzeRequestPayload,
     nextResult: AnalyzeApiResponse
   ) => {
     setRequest(nextRequest);
     setResult(nextResult);
-
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(
-        ANALYSIS_STORAGE_KEY,
-        JSON.stringify({
-          request: nextRequest,
-          result: nextResult
-        } satisfies PersistedAnalysis)
-      );
-    }
   }, []);
 
   const clearAnalysis = useCallback(() => {
     setRequest(null);
     setResult(null);
+  }, []);
 
-    if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem(ANALYSIS_STORAGE_KEY);
+  useEffect(() => {
+    try {
+      const storedValue = window.sessionStorage.getItem(
+        ANALYSIS_SESSION_STORAGE_KEY
+      );
+
+      if (!storedValue) {
+        setIsHydrated(true);
+        return;
+      }
+
+      const parsedValue = JSON.parse(storedValue) as unknown;
+
+      if (!isStoredAnalysisPayload(parsedValue)) {
+        window.sessionStorage.removeItem(ANALYSIS_SESSION_STORAGE_KEY);
+        setIsHydrated(true);
+        return;
+      }
+
+      setRequest(parsedValue.request ?? null);
+      setResult(parsedValue.result ?? null);
+    } catch {
+      window.sessionStorage.removeItem(ANALYSIS_SESSION_STORAGE_KEY);
+    } finally {
+      setIsHydrated(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (!request || !result) {
+      window.sessionStorage.removeItem(ANALYSIS_SESSION_STORAGE_KEY);
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      ANALYSIS_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        request,
+        result
+      })
+    );
+  }, [isHydrated, request, result]);
 
   return (
     <AnalysisContext.Provider

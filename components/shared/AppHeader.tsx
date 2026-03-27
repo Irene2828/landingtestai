@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CircleUserRound } from "lucide-react";
 
 const DEFAULT_TAGLINE = "AI-powered. Designed for designers.";
 
@@ -28,7 +29,14 @@ export function AppHeader({ tagline }: AppHeaderProps) {
           <h1>
             <span className="app-brand-title-row">
               <span>SAAS Landing Page Analyzer</span>
-              <span className="app-beta-label">Beta</span>
+              <span
+                className="app-beta-label"
+                data-tooltip="Text-grounded V1: analyzes extracted copy first. Visual layout checks land in V2."
+                aria-label="Beta. Text-grounded V1: analyzes extracted copy first. Visual layout checks land in V2."
+                tabIndex={0}
+              >
+                Beta
+              </span>
             </span>
           </h1>
           <p className="app-brand-tagline">{resolvedTagline}</p>
@@ -36,9 +44,7 @@ export function AppHeader({ tagline }: AppHeaderProps) {
       </Link>
 
       <div className="app-avatar" aria-hidden="true">
-        <span className="material-symbols-outlined app-avatar-icon">
-          account_circle
-        </span>
+        <CircleUserRound className="app-avatar-icon" strokeWidth={1.5} />
       </div>
     </header>
   );

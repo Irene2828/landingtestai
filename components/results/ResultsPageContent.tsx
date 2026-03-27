@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 import { isLikelyServiceBusiness } from "@/lib/business-type";
 import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
@@ -52,20 +53,18 @@ export function ResultsPageContent() {
               className="text-action page-header-link"
               aria-label="Back to Main Page"
             >
-              <span className="material-symbols-outlined" aria-hidden="true">
-                arrow_back
-              </span>
+              <ArrowLeft className="page-header-link-icon" strokeWidth={1.7} aria-hidden="true" />
             </Link>
           </div>
           <h2 className="page-title">Audit Results</h2>
-          <p className="page-intro">
-            Structured insights based on page content and competitor
-            comparisons.
-          </p>
-          <p className="page-coming-next">
-            Visual analysis is coming next. Some elements may not be captured
-            yet.
-          </p>
+          <div className="results-mode-row" aria-label="Analysis mode">
+            <span className="results-mode-badge">Text-grounded V1</span>
+            <span className="results-mode-copy">
+              Structured insights based on extracted copy. Visual elements like
+              logos, layout hierarchy, and button prominence are pending V2
+              vision analysis.
+            </span>
+          </div>
           {showServiceBusinessNote ? (
             <p className="page-intro page-intro-note">
               This page appears to be a service-based business. Analysis focuses

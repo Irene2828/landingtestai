@@ -50,6 +50,8 @@ export type SectionAnalysis = {
   title: string;
   summary: string;
   screenshotLabel: string;
+  sourceLabel: string;
+  sourceTone: "text" | "partial" | "visual";
   observation: string;
   evidence: string;
   recommendation: string;

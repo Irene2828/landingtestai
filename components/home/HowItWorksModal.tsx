@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type HowItWorksModalProps = {
@@ -127,9 +128,7 @@ export function HowItWorksModal({
             onClick={onClose}
             aria-label="Close how it works"
           >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              close
-            </span>
+            <X className="how-it-works-close-icon" strokeWidth={1.8} aria-hidden="true" />
           </button>
         </div>
 
@@ -141,8 +140,8 @@ export function HowItWorksModal({
               <span aria-hidden="true">→</span> Recommendation
             </p>
             <p className="how-it-works-note">
-              A quick preview of how the system turns extracted page content into
-              a usable UX finding.
+              A quick preview of how the text-grounded V1 turns extracted page
+              content into a usable UX finding.
             </p>
           </div>
 
@@ -191,8 +190,9 @@ export function HowItWorksModal({
           </div>
 
           <p className="how-it-works-footnote">
-            This version analyzes messaging and structure. Visual layout
-            analysis is part of the next iteration.
+            This version is text-grounded: it analyzes messaging and structure
+            from extracted content. Visual layout analysis is part of the next
+            iteration.
           </p>
         </div>
       </div>

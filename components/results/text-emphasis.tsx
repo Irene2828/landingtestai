@@ -1,7 +1,14 @@
 import { Fragment, type ReactNode } from "react";
 
+type EmphasisMode =
+  | "observation"
+  | "recommendation"
+  | "summary"
+  | "evidence";
+
 type EmphasisOptions = {
   maxPerLine?: number;
+  mode?: EmphasisMode;
 };
 
 type Match = {
@@ -10,34 +17,144 @@ type Match = {
   priority: number;
 };
 
-const emphasisRules = [
-  { pattern: /\bprimary CTA\b/gi, priority: 120 },
-  { pattern: /\bsecondary CTA\b/gi, priority: 118 },
-  { pattern: /\bCTA labels?\b/gi, priority: 116 },
-  { pattern: /\bCTA label\b/gi, priority: 114 },
-  { pattern: /\bCTA text\b/gi, priority: 112 },
-  { pattern: /\bsocial proof\b/gi, priority: 110 },
-  { pattern: /\btrust signals?\b/gi, priority: 108 },
-  { pattern: /\buser outcome\b/gi, priority: 106 },
-  { pattern: /\bprimary action\b/gi, priority: 104 },
-  { pattern: /\bconversion path\b/gi, priority: 102 },
-  { pattern: /\bproof types?\b/gi, priority: 100 },
-  { pattern: /\bfirst screen\b/gi, priority: 98 },
-  { pattern: /\bnext step\b/gi, priority: 96 },
-  { pattern: /\bclient logos?\b/gi, priority: 94 },
-  { pattern: /\bproof block\b/gi, priority: 92 },
-  { pattern: /\bheadlines?\b/gi, priority: 90 },
-  { pattern: /\bhero\b/gi, priority: 88 },
-  { pattern: /\boutcome\b/gi, priority: 86 },
-  { pattern: /\bproof\b/gi, priority: 84 },
-  { pattern: /\bCTA\b/gi, priority: 82 }
+type EmphasisRule = {
+  pattern: RegExp;
+  priority: number;
+  modes: EmphasisMode[];
+};
+
+const emphasisRules: EmphasisRule[] = [
+  {
+    pattern:
+      /\bCompared to [A-Z][A-Za-z0-9.&-]*(?: [A-Z][A-Za-z0-9.&-]*){0,2}(?:'s)?\b/i,
+    priority: 170,
+    modes: ["observation"]
+  },
+  {
+    pattern:
+      /\bUnlike [A-Z][A-Za-z0-9.&-]*(?: [A-Z][A-Za-z0-9.&-]*){0,2}(?:'s)?\b/i,
+    priority: 168,
+    modes: ["observation"]
+  },
+  {
+    pattern:
+      /\bWhereas [A-Z][A-Za-z0-9.&-]*(?: [A-Z][A-Za-z0-9.&-]*){0,2}(?:'s)?\b/i,
+    priority: 166,
+    modes: ["observation"]
+  },
+  {
+    pattern: /^What to check manually\b/i,
+    priority: 164,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Shift to)\b/i,
+    priority: 160,
+    modes: ["recommendation", "summary"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Clarify)\b/i,
+    priority: 158,
+    modes: ["recommendation", "summary"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Consolidate)\b/i,
+    priority: 156,
+    modes: ["recommendation", "summary"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Anchor)\b/i,
+    priority: 154,
+    modes: ["recommendation", "summary"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Define)\b/i,
+    priority: 152,
+    modes: ["recommendation", "summary"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Keep)\b/i,
+    priority: 150,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Add)\b/i,
+    priority: 148,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Make)\b/i,
+    priority: 146,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Move)\b/i,
+    priority: 144,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Pair)\b/i,
+    priority: 142,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Build)\b/i,
+    priority: 140,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Place)\b/i,
+    priority: 138,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Rework)\b/i,
+    priority: 136,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Replace)\b/i,
+    priority: 134,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Label)\b/i,
+    priority: 132,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Compare)\b/i,
+    priority: 130,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Check)\b/i,
+    priority: 128,
+    modes: ["recommendation"]
+  },
+  {
+    pattern: /^(?:-\s*)?(Headline|Title|CTAs|Trust Signals|Description):/i,
+    priority: 126,
+    modes: ["evidence"]
+  }
 ];
 
-function collectMatches(line: string) {
+function getGlobalPattern(pattern: RegExp) {
+  const flags = new Set(pattern.flags.split(""));
+  flags.add("g");
+
+  return new RegExp(pattern.source, Array.from(flags).join(""));
+}
+
+function collectMatches(line: string, mode: EmphasisMode) {
   const matches: Match[] = [];
 
   for (const rule of emphasisRules) {
-    for (const match of line.matchAll(rule.pattern)) {
+    if (!rule.modes.includes(mode)) {
+      continue;
+    }
+
+    for (const match of line.matchAll(getGlobalPattern(rule.pattern))) {
       const matchedText = match[0];
       const start = match.index ?? -1;
 
@@ -53,7 +170,7 @@ function collectMatches(line: string) {
     }
   }
 
-  for (const match of line.matchAll(/"([^"\n]{1,40})"/g)) {
+  for (const match of line.matchAll(/["“]([^"”\n]{1,120})["”]/g)) {
     const matchedText = match[0];
     const start = match.index ?? -1;
 
@@ -63,26 +180,31 @@ function collectMatches(line: string) {
 
     const wordCount = matchedText
       .replace(/"/g, "")
+      .replace(/[“”]/g, "")
       .trim()
       .split(/\s+/)
       .filter(Boolean).length;
 
-    if (wordCount === 0 || wordCount > 5) {
+    if (wordCount === 0 || wordCount > 12) {
       continue;
     }
 
     matches.push({
       start,
       end: start + matchedText.length,
-      priority: 95
+      priority: mode === "evidence" ? 124 : 122
     });
   }
 
   return matches;
 }
 
-function selectMatches(line: string, maxPerLine: number) {
-  const candidates = collectMatches(line).sort((left, right) => {
+function selectMatches(
+  line: string,
+  maxPerLine: number,
+  mode: EmphasisMode
+) {
+  const candidates = collectMatches(line, mode).sort((left, right) => {
     if (left.priority !== right.priority) {
       return right.priority - left.priority;
     }
@@ -118,8 +240,8 @@ function selectMatches(line: string, maxPerLine: number) {
   return selected.sort((left, right) => left.start - right.start);
 }
 
-function renderLine(line: string, maxPerLine: number) {
-  const matches = selectMatches(line, maxPerLine);
+function renderLine(line: string, maxPerLine: number, mode: EmphasisMode) {
+  const matches = selectMatches(line, maxPerLine, mode);
 
   if (matches.length === 0) {
     return line;
@@ -153,12 +275,12 @@ export function renderEmphasizedText(
   text: string,
   options: EmphasisOptions = {}
 ) {
-  const { maxPerLine = 2 } = options;
+  const { maxPerLine = 2, mode = "observation" } = options;
   const lines = text.split("\n");
 
   return lines.map((line, index) => (
     <Fragment key={`${line}-${index}`}>
-      {renderLine(line, maxPerLine)}
+      {renderLine(line, maxPerLine, mode)}
       {index < lines.length - 1 ? <br /> : null}
     </Fragment>
   ));

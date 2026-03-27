@@ -215,19 +215,19 @@ export function getSuggestedCompetitorsForUrl(url: string) {
 
 export const loadingSteps: LoadingStep[] = [
   {
-    title: "Parsing structure and page content",
-    description: "Extracting the core messaging, headings, and action paths.",
+    title: "Extracting hero, CTA, and proof text",
+    description: "Grounding the analysis in the target page's visible copy and structure.",
     status: "complete"
   },
   {
     title: "Comparing against selected competitors",
     description:
-      "Benchmarking value proposition, CTA clarity, and trust language.",
+      "Benchmarking positioning, CTA phrasing, and trust patterns against the selected set.",
     status: "active"
   },
   {
-    title: "Generating evidence-based recommendations",
-    description: "Compiling the clearest strengths, gaps, and next actions.",
+    title: "Drafting evidence-backed recommendations",
+    description: "Turning grounded comparisons into strengths, gaps, and next actions.",
     status: "pending"
   }
 ];
