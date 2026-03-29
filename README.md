@@ -113,12 +113,10 @@ That means:
 - outputs are structured for quick designer review
 - the next major unlock is screenshot / vision grounding, not looser prompting
 
-## What I Would Build Next
-- Screenshot and vision analysis for first-screen layout, button prominence, and trust placement
-- Smarter competitor discovery
-- Persisted analyses and shareable reports
-- Exportable PDF reports for review and handoff
-- Benchmark snapshots for repeated before/after comparisons
+## Roadmap
+- V2: add screenshot and vision analysis for layout, proof placement, CTA prominence, and harder rendered-content cases
+- V3: move from diagnosis to prescription with grounded design directives and proposed UI refinements
+- V4: generate reviewable UI variants, code-ready component suggestions, and benchmark history over time
 
 ## Security Notes
 - No API keys are exposed in client-side code
