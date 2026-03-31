@@ -1,3 +1,17 @@
+/**
+ * V1: Competitor suggestions use a curated lookup map for known categories.
+ * This is intentionally conservative — fake automatic discovery would be
+ * less reliable than honest manual override for an 8-hour V1.
+ *
+ * V2 approach (scoped, not yet built):
+ * 1. Extract category signal from target page (title, headline, description)
+ *    and ask the model what job the product solves and who the buyer is.
+ * 2. Use that as a search brief via Tavily or G2 category pages —
+ *    not a generic "competitors of X" query which returns listicles.
+ * 3. Validate relevance before running analysis using category language overlap.
+ * 4. Surface the competitor set as a reviewable step the user can edit
+ *    before analysis fires — consistent with the confidence system philosophy.
+ */
 import type {
   CompetitorSuggestion,
   LoadingStep,
