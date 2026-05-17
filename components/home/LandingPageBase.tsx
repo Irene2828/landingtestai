@@ -134,7 +134,24 @@ export function LandingPageBase() {
                 gap: 32px !important;
               }
             }
+            .main-hero-title {
+              font-size: 38px !important;
+              font-weight: 700;
+              color: #111827;
+              line-height: 1.15 !important;
+              letter-spacing: -0.02em;
+              margin: 0 0 24px 0;
+            }
+            @media (min-width: 480px) {
+              .main-hero-title {
+                font-size: 48px !important;
+              }
+            }
             @media (min-width: 900px) {
+              .main-hero-title {
+                font-size: 64px !important;
+                line-height: 1.1 !important;
+              }
               .hero-grid {
                 grid-template-columns: 1.1fr 0.9fr;
                 gap: 100px;
@@ -149,13 +166,9 @@ export function LandingPageBase() {
             <div className="hero-grid">
               {/* LEFT COLUMN: Narrative + Live States */}
               <div>
-                <h1 style={{ 
-                  fontSize: '64px', 
+                <h1 className="main-hero-title" style={{ 
                   fontWeight: 700, 
-                  color: '#111827', 
-                  lineHeight: 1.1,
-                  letterSpacing: '-0.02em',
-                  margin: '0 0 24px 0'
+                  color: '#111827'
                 }}>
                   <span style={{ position: 'relative', display: 'inline-block' }}>
                     <span style={{ 

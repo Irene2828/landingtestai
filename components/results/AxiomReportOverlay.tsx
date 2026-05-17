@@ -192,6 +192,26 @@ export function AxiomReportOverlay({ isOpen, result, url }: { isOpen: boolean; r
             gap: 32px !important;
           }
         }
+        .results-card {
+          background: #FFFFFF !important; 
+          border-radius: 24px !important; 
+          border: 1px solid #E5E7EB !important; 
+          padding: 24px !important;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+          display: flex !important;
+          flex-direction: column !important;
+          flex: 1 !important;
+        }
+        @media (min-width: 480px) {
+          .results-card {
+            padding: 32px !important;
+          }
+        }
+        @media (min-width: 768px) {
+          .results-card {
+            padding: 40px !important;
+          }
+        }
       `}</style>
 
       {/* LIGHT FLOW SECTION */}
@@ -217,16 +237,7 @@ export function AxiomReportOverlay({ isOpen, result, url }: { isOpen: boolean; r
               flexDirection: 'column',
               flex: 1
             }}>
-              <div style={{
-                background: '#FFFFFF', 
-                borderRadius: '24px', 
-                border: '1px solid #E5E7EB', 
-                padding: '40px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)',
-                display: 'flex',
-                flexDirection: 'column',
-                flex: 1
-              }}>
+              <div className="results-card">
                 {overallImpression && (
                   <>
                     {/* Integrated Audit Completed Header */}
@@ -333,16 +344,7 @@ export function AxiomReportOverlay({ isOpen, result, url }: { isOpen: boolean; r
               flexDirection: 'column',
               flex: 1
             }}>
-              <div style={{
-                background: '#FFFFFF', 
-                borderRadius: '24px', 
-                border: '1px solid #E5E7EB', 
-                padding: '40px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)',
-                display: 'flex',
-                flexDirection: 'column',
-                flex: 1
-              }}>
+              <div className="results-card">
                 {/* Quick Fixes Header with Baseline Space + Real Arrow Down placed under text */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '32px', width: '100%' }}>
                   {/* Invisible 60px spacer box to keep perfect baseline alignment with the left card's check badge */}
