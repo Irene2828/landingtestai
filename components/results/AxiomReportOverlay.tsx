@@ -138,10 +138,10 @@ export function AxiomReportOverlay({ isOpen, result, url }: { isOpen: boolean; r
           padding: 32px 20px 24px 20px !important;
         }
         .closing-cta-btn {
-          height: 56px;
-          padding: 0 32px;
-          border-radius: 28px;
-          font-size: 16px;
+          height: 52px;
+          padding: 0 20px;
+          border-radius: 26px;
+          font-size: 15px;
           font-weight: 600;
           text-decoration: none;
           display: flex;
@@ -150,11 +150,22 @@ export function AxiomReportOverlay({ isOpen, result, url }: { isOpen: boolean; r
           gap: 8px;
           box-shadow: none;
           transition: all 0.2s ease;
-          width: fit-content;
+          width: 100%;
+          max-width: 290px;
           white-space: nowrap;
           background-color: #FFFFFF !important;
           color: #111827 !important;
           border: none !important;
+        }
+        @media (min-width: 480px) {
+          .closing-cta-btn {
+            height: 56px;
+            padding: 0 32px;
+            border-radius: 28px;
+            font-size: 16px;
+            width: fit-content;
+            max-width: none;
+          }
         }
         @media (min-width: 768px) {
           .closing-cta-btn {

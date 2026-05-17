@@ -160,6 +160,43 @@ export function LandingPageBase() {
                 padding-top: 60px !important;
               }
             }
+            .tooltip-bubble {
+              position: absolute !important;
+              bottom: calc(100% + 8px) !important;
+              right: -30px !important;
+              left: auto !important;
+              width: 280px !important;
+              background-color: #1F2937 !important;
+              color: #FFFFFF !important;
+              padding: 16px !important;
+              border-radius: 12px !important;
+              box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+              z-index: 50 !important;
+              font-size: 12px !important;
+              line-height: 1.5 !important;
+              font-weight: 450 !important;
+              opacity: 0 !important;
+              visibility: hidden !important;
+              transform: translateY(-6px) !important;
+              transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+              pointer-events: none !important;
+              text-align: left !important;
+            }
+            .tooltip-bubble.tooltip-visible {
+              opacity: 1 !important;
+              visibility: visible !important;
+              transform: translateY(0) !important;
+            }
+            @media (min-width: 480px) {
+              .tooltip-bubble {
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%) translateY(-6px) !important;
+              }
+              .tooltip-bubble.tooltip-visible {
+                transform: translateX(-50%) translateY(0) !important;
+              }
+            }
           `}</style>
           
           <section style={{ padding: '12px 0 20px 0', position: 'relative' }}>
@@ -419,48 +456,27 @@ export function LandingPageBase() {
                             e.currentTarget.style.color = '#0057FF';
                             const tooltip = e.currentTarget.querySelector('.tooltip-bubble') as HTMLElement;
                             if (tooltip) {
-                              tooltip.style.opacity = '1';
-                              tooltip.style.visibility = 'visible';
-                              tooltip.style.transform = 'translateX(-50%) translateY(0)';
+                              tooltip.classList.add('tooltip-visible');
                             }
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.color = '#9CA3AF';
                             const tooltip = e.currentTarget.querySelector('.tooltip-bubble') as HTMLElement;
                             if (tooltip) {
-                              tooltip.style.opacity = '0';
-                              tooltip.style.visibility = 'hidden';
-                              tooltip.style.transform = 'translateX(-50%) translateY(-6px)';
+                              tooltip.classList.remove('tooltip-visible');
+                            }
+                          }}
+                          onClick={(e) => {
+                            const tooltip = e.currentTarget.querySelector('.tooltip-bubble') as HTMLElement;
+                            if (tooltip) {
+                              tooltip.classList.toggle('tooltip-visible');
                             }
                           }}
                         >
                           <Info size={14} strokeWidth={2.5} />
                           
                           {/* Tooltip Bubble */}
-                          <div 
-                            className="tooltip-bubble"
-                            style={{
-                              position: 'absolute',
-                              bottom: 'calc(100% + 8px)',
-                              left: '50%',
-                              transform: 'translateX(-50%) translateY(-6px)',
-                              width: '280px',
-                              backgroundColor: '#1F2937',
-                              color: '#FFFFFF',
-                              padding: '16px',
-                              borderRadius: '12px',
-                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-                              zIndex: 50,
-                              fontSize: '12px',
-                              lineHeight: 1.5,
-                              fontWeight: 450,
-                              opacity: 0,
-                              visibility: 'hidden',
-                              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                              pointerEvents: 'none',
-                              textAlign: 'left'
-                            }}
-                          >
+                          <div className="tooltip-bubble">
                             <div style={{ fontWeight: 600, color: '#00A69C', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '10px' }}>
                               How it works
                             </div>
