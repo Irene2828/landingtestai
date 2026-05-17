@@ -1,42 +1,35 @@
 export type ConfidenceLevel = "HIGH" | "LOW";
 
-export type AnalysisSectionKey = "Hero" | "CTA" | "Social Proof";
+export type AnalysisSectionKey = 
+  | "FIRST IMPRESSION" 
+  | "CALL TO ACTION" 
+  | "TRUST & CREDIBILITY" 
+  | "MESSAGING CLARITY" 
+  | "CONVERSION FRICTION";
 
 export type AnalyzeRequestPayload = {
   url: string;
-  sections: AnalysisSectionKey[];
-  competitorUrls?: string[];
+  businessType: string;
+  goal?: string;
 };
 
-export type CompetitorSuggestion = {
-  id: string;
-  name: string;
-  initials: string;
-  url: string;
+export type FrictionPoint = {
+  location: string;
+  current_text: string;
+  friction_analysis: string;
+  better_alternative: string;
+};
+
+export type OverallImpression = {
+  positioning: string;
+  ux_hierarchy: string;
+  cta_strategy: string;
 };
 
 export type AnalyzeApiResponse = {
-  sections: Array<{
-    name: AnalysisSectionKey;
-    title: string;
-    observation: string;
-    evidence: string;
-    recommendation: string;
-    confidence: {
-      level: ConfidenceLevel;
-      reason: string;
-    };
-  }>;
-  summary: {
-    keyStrengths: string[];
-    keyGaps: string[];
-    topActions: string[];
-  };
-};
-
-export type SetupSectionOption = {
-  key: AnalysisSectionKey;
-  label: string;
+  overall_impression: OverallImpression;
+  industry_modernity: string;
+  friction_audit: FrictionPoint[];
 };
 
 export type LoadingStep = {
@@ -45,28 +38,18 @@ export type LoadingStep = {
   status: "complete" | "active" | "pending";
 };
 
-export type SectionAnalysis = {
-  key: AnalysisSectionKey;
-  title: string;
-  summary: string;
-  screenshotLabel: string;
-  sourceLabel: string;
-  sourceTone: "text" | "partial" | "visual";
-  sourceHelpText?: string;
-  observation: string;
-  evidence: string;
-  recommendation: string;
-  confidence: {
-    level: ConfidenceLevel;
-    reason: string;
-  };
-};
-
-export type ResultsData = {
-  keyStrengths: string[];
-  keyGaps: string[];
-  topActions: string[];
-  sections: SectionAnalysis[];
-};
+export type ResultsData = AnalyzeApiResponse;
 
 export type MockResults = ResultsData;
+
+export type SectionAnalysis = {
+  name: AnalysisSectionKey;
+  score?: number;
+  grade?: string;
+  verdict?: string;
+  analysis?: string;
+  finding?: string;
+  actionable_fix?: string;
+  design_fix?: string;
+  status?: 'strong' | 'needs-work' | 'missing' | string;
+};

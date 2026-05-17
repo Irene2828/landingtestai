@@ -1,38 +1,15 @@
 "use client";
 
-import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
-
-import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
-import {
-  getCompetitorLookupKey,
-  getSuggestedCompetitorsForUrl,
-  suggestedCompetitors,
-  setupSections
-} from "@/lib/mock-setup";
-import type { AnalysisSectionKey, CompetitorSuggestion } from "@/lib/types";
-
-import { CompetitorTags } from "./CompetitorTags";
-import { SectionSelector } from "./SectionSelector";
+import { Search, ChevronDown } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { UrlField } from "./UrlField";
 
-const defaultSections: AnalysisSectionKey[] = ["Hero", "CTA", "Social Proof"];
 const URL_ERROR_MESSAGE = "Enter a valid URL (e.g. https://example.com)";
-const COMPETITOR_ERROR_MESSAGE =
-  "Enter a valid competitor URL (e.g. https://notion.com)";
 
 function normalizeUrlInput(value: string) {
   const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(trimmedValue)) {
-    return trimmedValue;
-  }
-
+  if (!trimmedValue) return "";
+  if (/^https?:\/\//i.test(trimmedValue)) return trimmedValue;
   return `https://${trimmedValue}`;
 }
 
@@ -45,292 +22,293 @@ function isValidNormalizedUrl(value: string) {
   }
 }
 
-function getCompetitorNameFromUrl(url: string) {
-  try {
-    const hostname = new URL(url).hostname.replace(/^www\./i, "");
-    const [firstPart] = hostname.split(".");
+const BUSINESS_TYPES = [
+  "Agency / Creative Studio",
+  "Professional Services",
+  "Local Service Business",
+  "eCommerce",
+  "B2B SaaS",
+  "Other"
+];
 
-    if (!firstPart) {
-      return hostname;
-    }
+const PRIMARY_GOALS = [
+  "Get more enquiries",
+  "Book calls or demos",
+  "Drive sales",
+  "Build brand awareness"
+];
 
-    return firstPart
-      .split(/[-_]/)
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
-  } catch {
-    return url;
-  }
-}
+type AnalysisSetupFormProps = {
+  isAnalyzing?: boolean;
+  onStartAnalysis?: (url: string, businessType: string, goal: string) => void;
+  onCancelAnalysis?: () => void;
+  onValidationChange?: (isValid: boolean) => void;
+  id?: string;
+  disabled?: boolean;
+  urlError?: string | null;
+};
 
-function getCompetitorInitials(name: string) {
-  const parts = name.split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) {
-    return "C";
-  }
-
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2);
-  }
-
-  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`;
-}
-
-function buildCustomCompetitor(url: string): CompetitorSuggestion {
-  const name = getCompetitorNameFromUrl(url);
-  const normalizedName = name || "Competitor";
-
-  return {
-    id: `custom:${url.toLowerCase()}`,
-    name: normalizedName,
-    initials: getCompetitorInitials(normalizedName),
-    url
-  };
-}
-
-function haveSameCompetitors(
-  left: CompetitorSuggestion[],
-  right: CompetitorSuggestion[]
-) {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  return left.every(
-    (competitor, index) => competitor.url === right[index]?.url
-  );
-}
-
-export function AnalysisSetupForm() {
-  const router = useRouter();
-  const { clearAnalysis } = useAnalysisStore();
+export function AnalysisSetupForm({ isAnalyzing = false, onStartAnalysis, onCancelAnalysis, onValidationChange, id, disabled = false, urlError: propUrlError }: AnalysisSetupFormProps) {
   const [url, setUrl] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
-  const [selectedSections, setSelectedSections] =
-    useState<AnalysisSectionKey[]>(defaultSections);
-  const [competitors, setCompetitors] = useState(suggestedCompetitors);
-  const [competitorInput, setCompetitorInput] = useState("");
-  const [competitorError, setCompetitorError] = useState<string | null>(null);
-  const lastSuggestionKeyRef = useRef("default");
-  const hasManualCompetitorEditsRef = useRef(false);
+  
+  const [businessType, setBusinessType] = useState("");
+  const [customBusinessType, setCustomBusinessType] = useState("");
+  const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false);
+  const businessDropdownRef = useRef<HTMLDivElement>(null);
+  
+  const [goal, setGoal] = useState("");
+  const [customGoal, setCustomGoal] = useState("");
+  const [isGoalDropdownOpen, setIsGoalDropdownOpen] = useState(false);
+  const goalDropdownRef = useRef<HTMLDivElement>(null);
+
+  const finalBusinessType = businessType === "Other" ? customBusinessType : businessType;
+  const finalGoal = goal === "Other" ? customGoal : goal;
 
   const canSubmit = useMemo(() => {
-    return url.trim().length > 0 && selectedSections.length > 0;
-  }, [selectedSections.length, url]);
+    const hasUrl = url.trim().length > 0;
+    const hasBusiness = businessType === "Other" ? customBusinessType.trim().length > 0 : businessType.trim().length > 0;
+    const hasGoal = goal === "Other" ? customGoal.trim().length > 0 : goal.trim().length > 0;
+    return hasUrl && hasBusiness && hasGoal;
+  }, [url, businessType, customBusinessType, goal, customGoal]);
 
   useEffect(() => {
-    const nextSuggestionKey = getCompetitorLookupKey(url);
-    const nextSuggestions = getSuggestedCompetitorsForUrl(url);
+    if (onValidationChange) {
+      onValidationChange(canSubmit);
+    }
+  }, [canSubmit, onValidationChange]);
 
-    if (nextSuggestionKey !== lastSuggestionKeyRef.current) {
-      lastSuggestionKeyRef.current = nextSuggestionKey;
-
-      if (hasManualCompetitorEditsRef.current) {
-        return;
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (businessDropdownRef.current && !businessDropdownRef.current.contains(event.target as Node)) {
+        setIsBusinessDropdownOpen(false);
       }
-
-      setCompetitors(nextSuggestions);
-      return;
+      if (goalDropdownRef.current && !goalDropdownRef.current.contains(event.target as Node)) {
+        setIsGoalDropdownOpen(false);
+      }
     }
-
-    if (hasManualCompetitorEditsRef.current) {
-      return;
-    }
-
-    setCompetitors((current) =>
-      haveSameCompetitors(current, nextSuggestions) ? current : nextSuggestions
-    );
-  }, [url]);
-
-  function toggleSection(section: AnalysisSectionKey) {
-    setSelectedSections((current) =>
-      current.includes(section)
-        ? current.filter((value) => value !== section)
-        : [...current, section]
-    );
-  }
-
-  function removeCompetitor(id: string) {
-    hasManualCompetitorEditsRef.current = true;
-    setCompetitors((current) =>
-      current.filter((competitor) => competitor.id !== id)
-    );
-  }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function handleUrlChange(nextUrl: string) {
     setUrl(nextUrl);
-
-    if (urlError) {
-      setUrlError(null);
-    }
-  }
-
-  function handleCompetitorInputChange(nextValue: string) {
-    setCompetitorInput(nextValue);
-
-    if (competitorError) {
-      setCompetitorError(null);
-    }
-  }
-
-  function handleAddCompetitor() {
-    const normalizedCompetitorUrl = normalizeUrlInput(competitorInput);
-
-    if (!normalizedCompetitorUrl || !isValidNormalizedUrl(normalizedCompetitorUrl)) {
-      setCompetitorError(COMPETITOR_ERROR_MESSAGE);
-      return;
-    }
-
-    const normalizedTargetUrl = normalizeUrlInput(url);
-
-    if (
-      normalizedTargetUrl &&
-      normalizedCompetitorUrl.toLowerCase() === normalizedTargetUrl.toLowerCase()
-    ) {
-      setCompetitorError("Target page and competitor cannot be the same URL");
-      return;
-    }
-
-    const competitorExists = competitors.some(
-      (competitor) =>
-        competitor.url.toLowerCase() === normalizedCompetitorUrl.toLowerCase()
-    );
-
-    if (competitorExists) {
-      setCompetitorError("That competitor is already in the comparison set");
-      return;
-    }
-
-    hasManualCompetitorEditsRef.current = true;
-    setCompetitors((current) => [...current, buildCustomCompetitor(normalizedCompetitorUrl)]);
-    setCompetitorInput("");
-    setCompetitorError(null);
+    if (urlError) setUrlError(null);
   }
 
   function handleUrlBlur() {
     const normalizedUrl = normalizeUrlInput(url);
-
-    if (normalizedUrl !== url) {
-      setUrl(normalizedUrl);
-    }
-
+    if (normalizedUrl !== url) setUrl(normalizedUrl);
     if (!normalizedUrl) {
       setUrlError(null);
       return;
     }
-
     setUrlError(isValidNormalizedUrl(normalizedUrl) ? null : URL_ERROR_MESSAGE);
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!canSubmit) {
-      setUrlError(URL_ERROR_MESSAGE);
-      return;
-    }
+    if (!canSubmit || isAnalyzing || disabled) return;
 
     const normalizedUrl = normalizeUrlInput(url);
-
-    if (normalizedUrl !== url) {
-      setUrl(normalizedUrl);
-    }
-
+    if (normalizedUrl !== url) setUrl(normalizedUrl);
     if (!isValidNormalizedUrl(normalizedUrl)) {
       setUrlError(URL_ERROR_MESSAGE);
       return;
     }
 
-    let effectiveCompetitors = hasManualCompetitorEditsRef.current
-      ? competitors
-      : getSuggestedCompetitorsForUrl(normalizedUrl);
-
-    const normalizedCompetitorUrl = normalizeUrlInput(competitorInput);
-
-    if (normalizedCompetitorUrl) {
-      if (!isValidNormalizedUrl(normalizedCompetitorUrl)) {
-        setCompetitorError(COMPETITOR_ERROR_MESSAGE);
-        return;
-      }
-
-      if (normalizedCompetitorUrl.toLowerCase() === normalizedUrl.toLowerCase()) {
-        setCompetitorError("Target page and competitor cannot be the same URL");
-        return;
-      }
-
-      const competitorExists = effectiveCompetitors.some(
-        (competitor) =>
-          competitor.url.toLowerCase() === normalizedCompetitorUrl.toLowerCase()
-      );
-
-      if (!competitorExists) {
-        effectiveCompetitors = [
-          ...effectiveCompetitors,
-          buildCustomCompetitor(normalizedCompetitorUrl)
-        ];
-      }
+    if (onStartAnalysis) {
+      onStartAnalysis(normalizedUrl, finalBusinessType, finalGoal);
     }
-
-    const searchParams = new URLSearchParams({
-      url: normalizedUrl
-    });
-
-    selectedSections.forEach((section) => {
-      searchParams.append("section", section);
-    });
-
-    effectiveCompetitors.forEach((competitor) => {
-      searchParams.append("competitorUrl", competitor.url);
-    });
-
-    clearAnalysis();
-    router.push(`/loading?${searchParams.toString()}`);
   }
 
+  const dropdownStyle = (isOpen: boolean, isSelected: boolean) => ({
+    width: '100%',
+    padding: '12px 16px',
+    fontSize: '15px',
+    color: disabled ? '#9CA3AF' : (isSelected ? '#0D0D0D' : '#6B6B6B'),
+    background: disabled ? '#F3F4F6' : '#FFFFFF',
+    border: `1px solid ${disabled ? '#E5E7EB' : (isOpen ? '#0057FF' : '#EBEBEB')}`,
+    borderRadius: '10px',
+    cursor: (isAnalyzing || disabled) ? 'not-allowed' : 'pointer',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    boxShadow: (isOpen && !disabled) ? '0 0 0 3px rgba(0,87,255,0.08)' : 'none',
+    transition: 'all 0.2s ease'
+  });
+
+  const menuStyle = {
+    position: 'absolute' as const,
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: '4px',
+    background: '#FFFFFF',
+    border: '1px solid #EBEBEB',
+    borderRadius: '10px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+    zIndex: 100,
+    maxHeight: '220px',
+    overflowY: 'auto' as const,
+    scrollbarWidth: 'thin' as const
+  };
+
+  const otherInputStyle = {
+    width: '100%',
+    marginTop: '6px',
+    padding: '10px 14px',
+    fontSize: '14px',
+    border: '1px solid #EBEBEB',
+    borderRadius: '8px',
+    background: disabled ? '#F3F4F6' : '#F9FAFB',
+    color: disabled ? '#9CA3AF' : '#0D0D0D',
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+    cursor: disabled ? 'not-allowed' : 'text'
+  };
+
   return (
-    <form className="setup-card" onSubmit={handleSubmit} noValidate>
-      <UrlField
-        value={url}
-        onChange={handleUrlChange}
-        onBlur={handleUrlBlur}
-        error={urlError}
-      />
-
-      <SectionSelector
-        options={setupSections}
-        selected={selectedSections}
-        onToggle={toggleSection}
-      />
-
-      <CompetitorTags
-        competitors={competitors}
-        competitorInput={competitorInput}
-        competitorError={competitorError}
-        onCompetitorInputChange={handleCompetitorInputChange}
-        onAddCompetitor={handleAddCompetitor}
-        onRemove={removeCompetitor}
-      />
-
-      <div className="setup-submit">
-        <div className="setup-submit-stack">
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={!canSubmit}
+    <form 
+      id={id}
+      className="setup-card" 
+      onSubmit={handleSubmit} 
+      noValidate
+      style={{ 
+        opacity: isAnalyzing ? 0.5 : 1, 
+        pointerEvents: isAnalyzing ? 'none' : 'auto',
+        transition: 'opacity 0.3s ease',
+        background: 'transparent',
+        padding: '0',
+        border: 'none',
+        boxShadow: 'none',
+        marginTop: '8px'
+      }}
+    >
+      {/* URL Field */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#0D0D0D', marginBottom: '2px' }}>
+          Website URL
+        </label>
+        <UrlField
+          value={url}
+          onChange={handleUrlChange}
+          onBlur={handleUrlBlur}
+          error={urlError || propUrlError}
+          disabled={disabled}
+        />
+      </div>
+      
+      {/* Business Type Dropdown */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#0D0D0D', marginBottom: '2px' }}>
+          Business type
+        </label>
+        <div ref={businessDropdownRef} style={{ position: 'relative' }}>
+          <div 
+            onClick={() => !isAnalyzing && !disabled && setIsBusinessDropdownOpen(!isBusinessDropdownOpen)}
+            style={dropdownStyle(isBusinessDropdownOpen, !!businessType)}
           >
-            <Search
-              className="primary-button-icon"
-              strokeWidth={1.8}
-              aria-hidden="true"
-            />
-            Analyze page
-          </button>
-          <p className="setup-submit-meta">
-            No signup required · ~10 seconds
-          </p>
+            {businessType || "Select business type"}
+            <ChevronDown size={18} color="#6B6B6B" style={{ transform: isBusinessDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </div>
+          {isBusinessDropdownOpen && (
+            <div style={menuStyle}>
+              {BUSINESS_TYPES.map(type => (
+                <div 
+                  key={type}
+                  onClick={() => {
+                    setBusinessType(type);
+                    setIsBusinessDropdownOpen(false);
+                    if (type !== "Other") setCustomBusinessType("");
+                  }}
+                  style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '15px', color: '#0D0D0D', background: businessType === type ? '#F0F5FF' : '#FFFFFF' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#F0F5FF')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = businessType === type ? '#F0F5FF' : '#FFFFFF')}
+                >
+                  {type}
+                </div>
+              ))}
+              <div 
+                onClick={() => {
+                  setBusinessType("Other");
+                  setIsBusinessDropdownOpen(false);
+                }}
+                style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '15px', color: '#0D0D0D', background: businessType === "Other" ? '#F0F5FF' : '#FFFFFF', borderTop: '1px solid #F0F0F0' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#F0F5FF')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = businessType === "Other" ? '#F0F5FF' : '#FFFFFF')}
+              >
+                Other
+              </div>
+            </div>
+          )}
         </div>
+        {businessType === "Other" && (
+          <input 
+            placeholder="Specify business type..." 
+            style={otherInputStyle}
+            value={customBusinessType}
+            onChange={(e) => setCustomBusinessType(e.target.value)}
+            disabled={disabled}
+            autoFocus
+          />
+        )}
+      </div>
+
+      {/* Goal Dropdown */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#0D0D0D', marginBottom: '2px' }}>
+          Primary goal
+        </label>
+        <div ref={goalDropdownRef} style={{ position: 'relative' }}>
+          <div 
+            onClick={() => !isAnalyzing && !disabled && setIsGoalDropdownOpen(!isGoalDropdownOpen)}
+            style={dropdownStyle(isGoalDropdownOpen, !!goal)}
+          >
+            {goal || "Select primary goal"}
+            <ChevronDown size={18} color="#6B6B6B" style={{ transform: isGoalDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </div>
+          {isGoalDropdownOpen && (
+            <div style={menuStyle}>
+              {PRIMARY_GOALS.map(g => (
+                <div 
+                  key={g}
+                  onClick={() => {
+                    setGoal(g);
+                    setIsGoalDropdownOpen(false);
+                    if (g !== "Other") setCustomGoal("");
+                  }}
+                  style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '15px', color: '#0D0D0D', background: goal === g ? '#F0F5FF' : '#FFFFFF' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#F0F5FF')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = goal === g ? '#F0F5FF' : '#FFFFFF')}
+                >
+                  {g}
+                </div>
+              ))}
+              <div 
+                onClick={() => {
+                  setGoal("Other");
+                  setIsGoalDropdownOpen(false);
+                }}
+                style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '15px', color: '#0D0D0D', background: goal === "Other" ? '#F0F5FF' : '#FFFFFF', borderTop: '1px solid #F0F0F0' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#F0F5FF')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = goal === "Other" ? '#F0F5FF' : '#FFFFFF')}
+              >
+                Other
+              </div>
+            </div>
+          )}
+        </div>
+        {goal === "Other" && (
+          <input 
+            placeholder="Describe your goal..." 
+            style={otherInputStyle}
+            value={customGoal}
+            onChange={(e) => setCustomGoal(e.target.value)}
+            disabled={disabled}
+            autoFocus
+          />
+        )}
       </div>
     </form>
   );

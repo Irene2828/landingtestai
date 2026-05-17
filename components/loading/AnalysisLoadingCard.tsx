@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Circle, LoaderCircle, Search } from "lucide-react";
+import { AlertCircle, Check, Circle, LoaderCircle, Search } from "lucide-react";
 import Link from "next/link";
 import {
   type ReadonlyURLSearchParams,
@@ -10,20 +10,36 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { useAnalysisStore } from "@/components/providers/AnalysisProvider";
-import { competitorCatalog, loadingSteps } from "@/lib/mock-setup";
 import type {
-  AnalysisSectionKey,
   AnalyzeApiResponse,
   AnalyzeRequestPayload
 } from "@/lib/types";
 
-const ANALYZE_TIMEOUT_MS = 45000;
+export type LoadingStep = {
+  title: string;
+  description: string;
+  status: "complete" | "active" | "pending";
+};
 
-const validSectionKeys = new Set<AnalysisSectionKey>([
-  "Hero",
-  "CTA",
-  "Social Proof"
-]);
+export const loadingSteps: LoadingStep[] = [
+  {
+    title: "Connecting to page",
+    description: "Resolving URL and checking accessibility",
+    status: "complete"
+  },
+  {
+    title: "Extracting content",
+    description: "Scanning page structure and visible text",
+    status: "active"
+  },
+  {
+    title: "Running opportunity analysis",
+    description: "Evaluating against agency conversion heuristics",
+    status: "pending"
+  }
+];
+
+const ANALYZE_TIMEOUT_MS = 45000;
 
 let pendingAnalyzeRequest:
   | {
@@ -33,32 +49,17 @@ let pendingAnalyzeRequest:
     }
   | null = null;
 
-const competitorUrlById = new Map(
-  competitorCatalog.map((competitor) => [competitor.id, competitor.url])
-);
-
 function getRequestFromSearchParams(
   searchParams: ReadonlyURLSearchParams
 ): AnalyzeRequestPayload {
   const url = searchParams.get("url")?.trim() ?? "";
-  const sections = searchParams
-    .getAll("section")
-    .filter(
-      (value): value is AnalysisSectionKey =>
-        validSectionKeys.has(value as AnalysisSectionKey)
-    );
-  const competitorUrls = [
-    ...searchParams.getAll("competitorUrl").map((value) => value.trim()),
-    ...searchParams
-      .getAll("competitor")
-      .map((value) => competitorUrlById.get(value))
-      .filter((value): value is string => typeof value === "string")
-  ].filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
+  const businessType = searchParams.get("businessType")?.trim() ?? "B2B SaaS";
+  const goal = searchParams.get("goal")?.trim() ?? "More demo requests";
 
   return {
     url,
-    sections,
-    competitorUrls
+    businessType,
+    goal
   };
 }
 
@@ -83,95 +84,104 @@ type AnalysisLoadingCardViewProps = {
   onRetry?: () => void;
 };
 
+const LOADING_STATES = [
+  "Fetching page content...",
+  "Extracting headlines, CTAs and trust signals...",
+  "Evaluating first impression...",
+  "Scoring conversion friction...",
+  "Generating opportunity report...",
+  "Almost there..."
+];
+
 function AnalysisLoadingCardView({
   error,
   onRetry
 }: AnalysisLoadingCardViewProps) {
+  const [currentStateIndex, setCurrentStateIndex] = useState(0);
+
+  useEffect(() => {
+    if (error) return;
+
+    const interval = setInterval(() => {
+      setCurrentStateIndex((prev) => 
+        prev < LOADING_STATES.length - 1 ? prev + 1 : prev
+      );
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [error]);
+
+  const progressPercentage = Math.min(((currentStateIndex + 1) / LOADING_STATES.length) * 100, 100);
+
   return (
-    <div className="loading-card">
-      <div className="loading-card-header">
-        <div className="loading-icon-ring" aria-hidden="true">
-          <div className="loading-icon-pulse" />
-          <Search className="loading-icon-glyph" strokeWidth={1.5} />
-        </div>
-
-        <h2 className="loading-card-title">Grounding your landing page audit</h2>
-        <p>
-          Extracting hero copy, CTA language, and trust cues before generating
-          evidence-backed recommendations.
-        </p>
-      </div>
-
-      <div className="loading-card-body">
-        <div className="progress-block">
-          <div className="progress-header">
-            <span>Analysis Progress</span>
-            <strong>65%</strong>
-          </div>
-
-          <div className="progress-track" aria-hidden="true">
-            <div className="progress-bar" />
-          </div>
-        </div>
-
-        <div className="loading-steps">
-          {loadingSteps.map((step) => (
-            <div
-              key={step.title}
-              className={`loading-step loading-step-${step.status}`}
-            >
-              <div className="loading-step-marker" aria-hidden="true">
-                {step.status === "complete" ? (
-                  <Check className="loading-step-icon" strokeWidth={1.5} />
-                ) : step.status === "active" ? (
-                  <LoaderCircle
-                    className="loading-step-icon loading-step-icon-active"
-                    strokeWidth={1.5}
-                  />
-                ) : (
-                  <Circle
-                    className="loading-step-icon loading-step-icon-pending"
-                    strokeWidth={1.5}
-                  />
-                )}
-              </div>
-
-              <div className="loading-step-copy">
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {error ? (
-          <div className="loading-error" role="alert">
-            <strong>Analysis could not be completed.</strong>
-            <p>{error}</p>
-          </div>
-        ) : null}
-
-        <div className="loading-actions">
-          {error ? (
-            <div className="loading-actions-group">
-              <button
-                className="primary-button"
-                type="button"
-                onClick={onRetry}
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 24px', width: '100%' }}>
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '480px', 
+        background: '#FFFFFF', 
+        borderRadius: '16px', 
+        border: '1px solid #EBEBEB',
+        padding: '40px',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.06)'
+      }}>
+        
+        {!error ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '10px', 
+                height: '10px', 
+                borderRadius: '50%', 
+                background: '#0057FF',
+                animation: 'pulse-dot 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              }} />
+              <div 
+                key={currentStateIndex}
+                style={{ 
+                  color: '#3D3D3D', 
+                  fontSize: '15px', 
+                  fontWeight: 500,
+                  animation: 'fade-in 0.3s ease forwards'
+                }}
               >
-                Retry Analysis
-              </button>
-              <Link href="/" className="text-action" prefetch={false}>
-                Back to setup
-              </Link>
+                {LOADING_STATES[currentStateIndex]}
+              </div>
             </div>
-          ) : (
-            <Link href="/" className="text-action" prefetch={false}>
-              Cancel Analysis
-            </Link>
-          )}
-        </div>
+
+            <div style={{ width: '100%', height: '2px', background: '#EBEBEB', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ 
+                height: '100%', 
+                background: '#0057FF', 
+                width: `${progressPercentage}%`,
+                transition: 'width 2.5s linear'
+              }} />
+            </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: '#FFF0F0', color: '#E54A4A', marginBottom: '16px' }}>
+              <AlertCircle strokeWidth={1.5} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#0D0D0D', margin: '0 0 8px' }}>Analysis Failed</h3>
+            <p style={{ color: '#6B6B6B', fontSize: '14px', margin: '0 0 24px' }}>{error}</p>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <button className="primary-button" onClick={onRetry}>Try Again</button>
+              <Link href="/" style={{ color: '#6B6B6B', fontSize: '14px', textDecoration: 'none', fontWeight: 500 }}>Cancel</Link>
+            </div>
+          </div>
+        )}
       </div>
+
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(2px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -190,15 +200,15 @@ export function AnalysisLoadingCard() {
     () => getRequestFromSearchParams(searchParams),
     [searchParams]
   );
-  const requestKey = `${request.url}:${request.sections.join("|")}:${request.competitorUrls?.join("|") ?? ""}:${attempt}`;
+  const requestKey = `${request.url}:${request.businessType}:${request.goal}:${attempt}`;
 
   useEffect(() => {
     let isActive = true;
 
-    if (!request.url || request.sections.length === 0) {
+    if (!request.url) {
       clearAnalysis();
       setError(
-        "Missing analysis input. Go back and submit a URL and section selection."
+        "Missing analysis input. Go back and submit a URL."
       );
       return () => {
         isActive = false;
@@ -209,11 +219,8 @@ export function AnalysisLoadingCard() {
 
     const requestPayload: AnalyzeRequestPayload = {
       url: String(request.url),
-      sections: request.sections.map((section) => String(section)).filter(
-        (section): section is AnalysisSectionKey =>
-          validSectionKeys.has(section as AnalysisSectionKey)
-      ),
-      competitorUrls: request.competitorUrls ?? []
+      businessType: request.businessType ?? "Other",
+      goal: request.goal ?? "Not specified"
     };
 
     async function runAnalysis() {
@@ -241,8 +248,8 @@ export function AnalysisLoadingCard() {
                   cache: "no-store",
                   body: JSON.stringify({
                     url: requestPayload.url,
-                    sections: requestPayload.sections,
-                    competitorUrls: requestPayload.competitorUrls
+                    businessType: requestPayload.businessType,
+                    goal: requestPayload.goal
                   })
                 });
 
@@ -302,8 +309,8 @@ export function AnalysisLoadingCard() {
         setAnalysis(
           {
             url: requestPayload.url,
-            sections: requestPayload.sections,
-            competitorUrls: requestPayload.competitorUrls
+            businessType: requestPayload.businessType,
+            goal: requestPayload.goal
           },
           responsePayload
         );

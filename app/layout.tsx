@@ -1,27 +1,46 @@
 import type { Metadata } from "next";
+import { Inter, Manrope, JetBrains_Mono } from "next/font/google";
 
 import { AnalysisProvider } from "@/components/providers/AnalysisProvider";
 
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap"
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap"
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+  display: "swap"
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://landingtestai.vercel.app"),
-  title: "AI Landing Page Analyzer",
+  title: "Website Analyzer | Find where you're losing customers",
   description:
-    "Compare Hero, CTA, and Social Proof against competitors with evidence-backed UX recommendations and confidence levels.",
+    "Industrial-grade conversion audits for ambitious brands.",
   openGraph: {
-    title: "AI Landing Page Analyzer",
+    title: "Website Analyzer | Find where you're losing customers",
     description:
-      "Compare Hero, CTA, and Social Proof against competitors with evidence-backed UX recommendations and confidence levels.",
+      "Industrial-grade conversion audits for ambitious brands.",
     url: "https://landingtestai.vercel.app",
-    siteName: "AI Landing Page Analyzer",
+    siteName: "Axiom",
     type: "website"
   },
   twitter: {
     card: "summary",
-    title: "AI Landing Page Analyzer",
+    title: "Website Analyzer | Find where you're losing customers",
     description:
-      "Compare Hero, CTA, and Social Proof against competitors with evidence-backed UX recommendations and confidence levels."
+      "Find where your website is losing leads — industrial-grade audit."
   }
 };
 
@@ -31,7 +50,7 @@ type RootLayoutProps = {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${manrope.variable} ${jetbrainsMono.variable}`}>
       <body>
         <AnalysisProvider>{children}</AnalysisProvider>
       </body>
